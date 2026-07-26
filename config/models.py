@@ -18,13 +18,20 @@ class Function:
         self.name = name
         self.description = description
 
-        self.returns: type | None = TypeHandler.types.get(returns.get("type"))
+        type_str = returns.get("type")
+        if type_str is not None:
+            self.returns: type | None = TypeHandler.types.get(type_str)
+        else:
+            raise SyntaxError("Type not specified in function returns")
 
         self.parameters: dict[str, type | None] = {}
         for item in parameters.items():
             param_name = item[0]
             type_str = item[1].get("type")
-            type_cln = TypeHandler.types.get(type_str)
+            if type_str is not None:
+                type_cln = TypeHandler.types.get(type_str)
+            else:
+                raise SyntaxError("Type not specified in function returns")
             self.parameters[param_name] = type_cln
 
     @staticmethod
