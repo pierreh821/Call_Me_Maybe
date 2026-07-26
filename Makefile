@@ -1,4 +1,4 @@
-ENV := .venv/
+ENV := .venv
 PYTHON := $(ENV)/bin/python
 export PATH := $(HOME)/.local/bin:$(PATH)
 
@@ -21,9 +21,9 @@ clean:
 	rm -rf $(ENV)
 
 lint:
-	flake8
-	mypy --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs .
+	$(PYTHON) -m flake8 --exclude=".venv .src"
+	$(PYTHON) -m mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs --exclude=".venv .src"
 
 lint-strict:
-	flake8
-	mypy --strict .
+	$(PYTHON) -m flake8 --exclude=".venv .src"
+	$(PYTHON) -m mypy . --strict --exclude=".venv .src"
