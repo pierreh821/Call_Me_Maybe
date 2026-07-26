@@ -3,7 +3,7 @@
 from config import Parser
 
 if __name__ == "__main__":
-    func_list = Parser.parse("src/data/input/functions_definition.json")
+    func_list = Parser.parse("data/input/functions_definition.json")
 
     for fn in func_list:
         print(f"\n{fn.name}: {fn.description} Returns "

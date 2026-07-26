@@ -11,10 +11,10 @@ install:
 	uv sync
 
 run:
-	uv run python -m src
+	uv run python -m main
 
 debug:
-	uv run python -m pdb -m src
+	uv run python -m pdb -m main
 
 clean:
 	rm -rf __pycache__ .mypy_cache .pytest_cache
