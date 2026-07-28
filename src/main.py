@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from config import FunctionParser, PromptParser, Function
+from .parsers import FunctionParser, PromptParser
+from models import Function
 
 if __name__ == "__main__":
     func_list = FunctionParser.parse("data/input/functions_definition.json")

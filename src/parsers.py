@@ -1,11 +1,13 @@
-import json
 from abc import ABC
-from .function import Function
+import json
+
+from models import Function
+from typing import Any
 
 
 class Parser(ABC):
     @staticmethod
-    def load_json(file: str):
+    def load_json(file: str) -> Any:
         with open(file) as f:
             return json.load(f)
 

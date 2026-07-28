@@ -59,7 +59,7 @@ class Function:
         return True
 
     @staticmethod
-    def print_list(func_list: list["Function"]):
+    def print_list(func_list: list["Function"]) -> None:
         for fn in func_list:
             print(f"\n{fn.name}: {fn.description} Returns "
                   f"{str(fn.returns).split("'")[1]}")

@@ -1,6 +1,8 @@
 ENV := .venv
 PYTHON := $(ENV)/bin/python
-export PATH := $(HOME)/.local/bin:$(PATH)
+
+SRC := src
+MODELS := models
 
 .PHONY: all install run debug clean lint lint-strict
 
@@ -11,19 +13,19 @@ install:
 	uv sync
 
 run:
-	uv run python -m main
+	uv run python -m $(SRC)/main
 
 debug:
-	uv run python -m pdb -m main
+	uv run python -m pdb -m $(SRC)/main
 
 clean:
 	rm -rf __pycache__ .mypy_cache .pytest_cache
 	rm -rf $(ENV)
 
 lint:
-	$(PYTHON) -m flake8 --exclude=".venv .src"
-	$(PYTHON) -m mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs --exclude=".venv .src"
+	$(PYTHON) -m flake8 $(SRC) $(MODELS)
+	$(PYTHON) -m mypy $(SRC) $(MODELS) --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 lint-strict:
-	$(PYTHON) -m flake8 --exclude=".venv .src"
-	$(PYTHON) -m mypy . --strict --exclude=".venv .src"
+	$(PYTHON) -m flake8 $(SRC) $(MODELS)
+	$(PYTHON) -m mypy $(SRC) $(MODELS) --strict
