@@ -1,4 +1,5 @@
-from .parser import Parser
+from .parsers import FunctionParser, PromptParser
 from .function import Function
 
-__all__ = ["Function", "Parser"]
+__all__ = ["Function",
+           "FunctionParser", "PromptParser"]
