@@ -1,8 +1,8 @@
 from abc import ABC
+from typing import Any
 import json
 
-from models import Function
-from typing import Any
+from .models import Function
 
 
 class Parser(ABC):

@@ -1,13 +1,17 @@
 [project]
 name = "Call_me_maybe"
 
-version = "0.1"
+version = "0.1.0"
 
 requires-python = ">=3.10"
 
 dependencies = [
-  "pydantic",
-  "numpy",
-  "mypy",
-  "flake8",
+    "pydantic",
+    "numpy",
+    "flake8",
+    "mypy",
+    "llm_sdk",
 ]
+
+[tool.uv.sources]
+llm_sdk = { path = "./llm_sdk" }

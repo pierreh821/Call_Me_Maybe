@@ -2,3 +2,5 @@ uv.lock
 __pycache__
 .mypy_cache
 .venv
+dist
+Call_me_maybe.egg-info
