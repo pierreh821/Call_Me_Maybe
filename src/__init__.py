@@ -1,5 +1,5 @@
-from .models import Function
-from .parsers import FunctionParser, PromptParser
+from .models import Tool
+from .parsers import ToolParser, PromptParser
 
-__all__ = ["Function",
-           "FunctionParser", "PromptParser"]
+__all__ = ["Tool",
+           "ToolParser", "PromptParser"]

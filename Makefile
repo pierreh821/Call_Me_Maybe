@@ -3,7 +3,7 @@ PYTHON := $(ENV)/bin/python
 
 .PHONY: all install run debug clean lint lint-strict
 
-all: install
+all: run
 
 install:
 	uv sync

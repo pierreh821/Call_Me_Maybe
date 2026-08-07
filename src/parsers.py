@@ -2,7 +2,7 @@ from abc import ABC
 from typing import Any
 import json
 
-from .models import Function
+from .models import Tool
 
 
 class Parser(ABC):
@@ -12,19 +12,19 @@ class Parser(ABC):
             return json.load(f)
 
 
-class FunctionParser(Parser):
+class ToolParser(Parser):
     @classmethod
-    def parse(cls, file: str) -> list[Function]:
+    def parse(cls, file: str) -> list[Tool]:
         raw_func_list = cls.load_json(file)
         if not isinstance(raw_func_list, list):
             raise SyntaxError("JSON error")
 
-        func_list: list[Function] = []
+        func_list: list[Tool] = []
         for raw_func in raw_func_list:
-            if not Function.is_valid(raw_func):
+            if not Tool.is_valid(raw_func):
                 raise SyntaxError("JSON Error")
 
-            func_list.append(Function(
+            func_list.append(Tool(
                 raw_func["name"],
                 raw_func["description"],
                 raw_func["parameters"],

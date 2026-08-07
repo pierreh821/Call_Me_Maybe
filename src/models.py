@@ -5,7 +5,7 @@ class TypeHandler:
         }
 
 
-class Function:
+class Tool:
     def __init__(
             self,
             name: str,
@@ -59,7 +59,7 @@ class Function:
         return True
 
     @staticmethod
-    def print_list(func_list: list["Function"]) -> None:
+    def print_list(func_list: list["Tool"]) -> None:
         for fn in func_list:
             print(f"\n{fn.name}: {fn.description} Returns "
                   f"{str(fn.returns).split("'")[1]}")
