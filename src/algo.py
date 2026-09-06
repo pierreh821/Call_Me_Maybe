@@ -29,10 +29,10 @@ class FunctionCallFSM:
         self.vocab = vocab
         self.id_to_token = id_to_token
         self.valid_func_names = {f.name for f in tools}
-        self.param_depth = 0
+        # self.param_depth = 0
 
     def get_allowed_tokens(self, current_text: str) -> set[int] | None:
-        clean_text = current_text.replace(' ', '').replace('\n', '')
+        clean_text = current_text.replace(' ', '').replace('\n', '').replace('fn_', '')
 
         match self.state:
             case State.EXPECT_NAME_KEY:
@@ -52,7 +52,7 @@ class FunctionCallFSM:
             case State.EXPECT_COMMA_1:
                 if ',"parameters"' in clean_text:
                     self.state = State.EXPECT_COLON_2
-                elif ',' in clean_text[clean_text.rfind(func_name) if 'func_name' in locals() else 0:]:
+                elif ',' in clean_text:
                     self.state = State.EXPECT_PARAMS_KEY
 
             case State.EXPECT_PARAMS_KEY:
@@ -66,11 +66,13 @@ class FunctionCallFSM:
             case State.EXPECT_START_PARAMS:
                 if '"parameters":{' in clean_text:
                     self.state = State.INSIDE_PARAMS
-                    self.param_depth = 1
 
         return self._get_mask_for_state()
 
     def _get_mask_for_state(self) -> set[int] | None:
+        if self.state == State.EXPECT_NAME_KEY:
+            return {t for t, s in self.id_to_token.items() if '"' in s or 'name' in s}
+
         if self.state == State.EXPECT_FUNC_NAME:
             allowed: set = set()
             for token_tuple in self.vocab.function_name_tokens:
@@ -85,14 +87,14 @@ class FunctionCallFSM:
         if self.state == State.EXPECT_COMMA_1:
             return {t for t, s in self.id_to_token.items() if ',' in s}
 
-        if self.state == State.EXPECT_START_PARAMS:
-            return {t for t, s in self.id_to_token.items() if '{' in s}
+        if self.state in (State.EXPECT_PARAMS_KEY, State.EXPECT_START_PARAMS):
+            return {t for t, s in self.id_to_token.items() if '"' in s or 'parameters' in s or '{' in s}
 
         if self.state == State.INSIDE_PARAMS:
             return (self.vocab.alpha_tokens
                     | self.vocab.digits_tokens
                     | self.vocab.punct_tokens)
-
+            
         return None
 
 
@@ -100,26 +102,19 @@ def decode_token_string(s: str) -> str:
     return s.replace(u"\u2581", ' ').replace('Ġ', ' ')
 
 
-
-
 def format_prompt(prompt: str, tools: list[Tool]) -> str:
     res = (
-        "You are a function calling assistant."
-        "You must respond ONLY with a JSON object matching this structure:"
-        "{\"name\": \"<function_name>\", \"parameters\": {<args>}}"
-        "Available functions:"
-        )
+        "You are a function calling assistant who can only speak JSON."
+        "You must respond ONLY with a JSON object matching this structure: "
+        '{"name": "<function_name>", "parameters": {<args>}}\n'
+        "Available functions:\n"
+    )
 
     for tool in tools:
-        param_str = ""
-        for p_name, p_type in tool.parameters.items():
-            param_str += f"{p_name} :{p_name}, "
-        res += f" - {tool.name}({param_str}): {tool.description}"
+        param_str = ", ".join([f"{p_name}: {p_type}" for p_name, p_type in tool.parameters.items()])
+        res += f"- {tool.name}({param_str}): {tool.description}\n"
 
-    res += (
-        f"User query: {prompt}"
-        "Output JSON: {")
-
+    res += f"\nUser query: {prompt}\nOutput JSON: {{"
     return res
 
 
