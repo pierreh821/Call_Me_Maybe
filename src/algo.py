@@ -103,18 +103,25 @@ def decode_token_string(s: str) -> str:
 
 
 def format_prompt(prompt: str, tools: list[Tool]) -> str:
-    res = (
-        "You are a function calling assistant who can only speak JSON."
-        "You must respond ONLY with a JSON object matching this structure: "
-        '{"name": "<function_name>", "parameters": {<args>}}\n'
-        "Available functions:\n"
-    )
+    res = "Available functions:\n"
 
     for tool in tools:
-        param_str = ", ".join([f"{p_name}: {p_type}" for p_name, p_type in tool.parameters.items()])
+        param_str = ", ".join([f'''{p_name}: {str(p_type).split("'")[1]}''' for p_name, p_type in tool.parameters.items()])
         res += f"- {tool.name}({param_str}): {tool.description}\n"
 
-    res += f"\nUser query: {prompt}\nOutput JSON: {{"
+    res += (
+        "\nYou are a function calling assistant who can only speak JSON."
+        "You must respond ONLY with a JSON object matching this structure: "
+        '{"name": "<function_name>", "parameters": {<args>}}\n'
+    )
+
+    res += (
+        f"\nUser query: {prompt}\n"
+        "Find the appropriate function giving the user query, give its name and parameters as required by the JSON syntax.\n"
+        "Do not say anything outside of the JSON output.\n"
+        "Output JSON: {"
+        )
+    print(f"prompt: {res}")
     return res
 
 
@@ -200,5 +207,27 @@ def algo(prompt: str, tools: list[Tool]) -> str:
         if current_text.endswith("}}"):
             break
 
-    return "".join([decode_token_string(id_to_token[t])
-                    for t in generated_tokens])
+    # print("".join([decode_token_string(id_to_token[t])
+                    # for t in generated_tokens]))
+    return test_end_json("".join([decode_token_string(id_to_token[t])
+                    for t in generated_tokens]))
+
+def test_end_json2(response: str):
+    braces = 0
+    for i, char in enumerate(response):
+        braces += (char == '{')
+        braces -= (char == '}')
+
+        if i > 0 and braces == 0:
+            break
+
+    return response[:i+1]
+
+def test_end_json(response: str):
+    opened = response.count('{')
+    closed = 0
+    for i, char in enumerate(response):
+        if char == '}':
+            closed += 1
+        if opened == closed:
+            return response[:i+1]
