@@ -6,4 +6,4 @@ from .algo import algo
 
 if __name__ == "__main__":
     func_list = ToolParser.parse("data/input/functions_definition.json")
-    print(algo("What is the sum of 2 and 3?", func_list))
+    print(algo("Greet Shrek", func_list))

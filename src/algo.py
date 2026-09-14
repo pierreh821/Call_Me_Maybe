@@ -29,9 +29,9 @@ def format_prompt(prompt: str, tools: list[Tool]) -> str:
         f"\nUser query: {prompt}\n"
         "Find the appropriate function giving the user query, give its name and parameters as required by the JSON syntax.\n"
         "Do not say anything outside of the JSON output.\n"
-        "Output JSON: {"
+        "Clean JSON output: {"
         )
-    print(f"prompt: {res}")
+    print(f"prompt: {res}", end ='')
     return res
 
 def tensor_to_token(tensor: Tensor) -> list[int]:
@@ -66,7 +66,8 @@ def algo(prompt: str, tools: list[Tool]) -> str:
         if current_text.endswith("}}"):
             break
 
-    return test_end_json("".join([model.decode(t) for t in generated_tokens]))
+    print("".join([model.decode(t) for t in generated_tokens]))
+    # return test_end_json("".join([model.decode(t) for t in generated_tokens]))
 
 def test_end_json2(response: str):
     braces = 0
