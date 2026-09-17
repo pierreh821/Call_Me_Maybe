@@ -10,22 +10,22 @@ def main() -> None:
     input_parser = ArgumentParser()
 
     input_parser.add_argument(
-        '-f', ' --functions_definition',
-        action='store',
+        '-f', '--functions_definition',
         default='data/input/functions_definition.json',
-        help='Path to the functions definition JSON'
+        help='Path to the functions definition JSON',
+        required=False
     )
     input_parser.add_argument(
         '-i', '--input',
-        action='store',
         default='data/input/function_calling_tests_json',
-        help='Path to the prompt list JSON'
+        help='Path to the prompt list JSON',
+        required=False
     )
     input_parser.add_argument(
         '-o', '--output',
-        action='store',
         default='data/output.json',
-        help='Path to the output JSON'
+        help='Path to the output JSON',
+        required=False
     )
 
     args = input_parser.parse_args()
@@ -33,6 +33,7 @@ def main() -> None:
 
     func_list = ToolParser.parse("data/input/functions_definition.json")
     print(algo("Greet Shrek", func_list))
+
 
 if __name__ == "__main__":
     main()
