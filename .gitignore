@@ -4,3 +4,5 @@ __pycache__
 .venv
 dist
 Call_me_maybe.egg-info
+moulinette
+data/output

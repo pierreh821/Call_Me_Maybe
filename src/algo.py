@@ -19,6 +19,15 @@ class FunctionCalling:
             res_dict["prompt"] = p
             output.append(res_dict)
 
+        return self._format_output(output)
+
+    @staticmethod
+    def _format_output(output: list[dict]):
+        for res in output:
+            for key, val in res["parameters"].items():
+                if val.is_integer():
+                    res["parameters"][key] = int(val)
+
         return output
 
     def _single_function_call(self, prompt: str) -> str:
