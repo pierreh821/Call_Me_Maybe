@@ -1,100 +1,104 @@
+import llm_sdk
 import json
-import math
-
-from llm_sdk import Small_LLM_Model
 from torch import Tensor
-from enum import Enum, auto
 from .models import Tool
-import re
+
+MAX_TOKENS = 100
 
 
-def decode_token_string(s: str) -> str:
-    return s.replace(u"\u2581", ' ').replace('Ġ', ' ')
+class FunctionCalling:
+    def __init__(self, tools: list[Tool]):
+        self.tools = tools
+        self.model = llm_sdk.Small_LLM_Model()
 
+    def run_prompts(self, prompts: list[str]) -> list[dict]:
+        output: list[dict] = []
+        for p in prompts:
+            res_str = self._single_function_call(p)
+            res_dict = json.loads(res_str)
+            res_dict["prompt"] = p
+            output.append(res_dict)
 
-def format_prompt(prompt: str, tools: list[Tool]) -> str:
+        return output
 
-    tools_list = ""
-    for tool in tools:
-        param_str = ", ".join([f'''{p_name}: {str(p_type).split("'")[1]}'''
-                               for p_name, p_type in tool.parameters.items()])
-        tools_list += f"- {tool.name}({param_str}): {tool.description}\n"
+    def _single_function_call(self, prompt: str) -> str:
+        prompt = self._format_prompt(prompt)
 
-    # return (
-    #     f"Available functions: \n{tools_list}"
-    #     "\nYou are a function calling assistant who can only speak JSON."
-    #     "You must respond ONLY with a JSON object matching this structure: "
-    #     '{"name": "<function_name>", "parameters": {<args>}}\n'
-    #     f"\nUser query: {prompt}\n"
-    #     "Find the appropriate function giving the user query, give its name and parameters as required by the JSON syntax.\n"
-    #     "Do not say anything outside of the JSON output.\n"
-    #     "Clean JSON output: {"
-    # )
+        current_input_ids = self._tensor_to_token(self.model.encode(prompt))
+        init_ids = self._tensor_to_token(self.model.encode('{'))
 
-    return (
-        f"Available functions: \n{tools_list}"
-        "You are a function calling assistant.\n"
-        "Produce the output as a JSON with a top-level key called 'name' "
-        "and a second-level key named 'parameters' like this:\n"
-        '{"name": "<function_name>", "parameters": {<args>}}\n'
-        "The output ends when the JSON is properly closed.\n"
-        f"User query: {prompt}\n"
-        "Clean JSON output: {"
-    )
+        generated_tokens: list[int] = list(init_ids)
 
-def tensor_to_token(tensor: Tensor) -> list[int]:
-    res = tensor.tolist() if hasattr(tensor, "tolist") else list(tensor)
+        for _ in range(MAX_TOKENS):
+            logits = self.model.get_logits_from_input_ids(current_input_ids)
+            current_text = self.model.decode(generated_tokens)
 
-    while isinstance(res, list) and len(res) > 0 and isinstance(res[0], list):
-        res = res[0]
+            next_token_id = int(max(range(len(logits)),
+                                    key=lambda i: logits[i]))
 
-    return res
+            current_input_ids.append(next_token_id)
+            generated_tokens.append(next_token_id)
 
+            if current_text.endswith("}}"):
+                break
 
-def algo(prompt: str, tools: list[Tool]) -> str:
-    model = Small_LLM_Model()
+        # print("".join([model.decode(t) for t in generated_tokens]))
+        return self._test_end_json2("".join([self.model.decode(t)
+                                            for t in generated_tokens]))
+        # return "".join([model.decode(t) for t in generated_tokens])
 
-    prompt = format_prompt(prompt, tools)
-    print(f"promtp: {prompt}")
+    def _format_prompt(self, prompt: str) -> str:
+        tools_list = ""
+        for tool in self.tools:
+            parameters = [f'''{p_name}: {str(p_type).split("'")[1]}'''
+                          for p_name, p_type in tool.parameters.items()]
+            param_str = ", ".join(parameters)
+            tools_list += f"- {tool.name}({param_str}): {tool.description}\n"
 
-    current_input_ids = tensor_to_token(model.encode(prompt))
-    init_ids = tensor_to_token(model.encode('{'))
+        return (
+            f"Available functions: \n{tools_list}"
+            "You are a function calling assistant.\n"
+            "Produce the output as a JSON with a top-level key called 'name' "
+            "and a second-level key named 'parameters' like this:\n"
+            '{"name": "<function_name>", "parameters": {<args>}}\n'
+            "The output ends when the JSON is properly closed.\n"
+            f"User query: {prompt}\n"
+            "Clean JSON output: {"
+        )
 
-    generated_tokens: list[int] = list(init_ids)
-    max_tokens = 100
+    @staticmethod
+    def _tensor_to_token(tensor: Tensor) -> list[int]:
+        res = tensor.tolist() if hasattr(tensor, "tolist") else list(tensor)
 
-    for _ in range(max_tokens):
-        logits = model.get_logits_from_input_ids(current_input_ids)
-        current_text = model.decode(generated_tokens)
+        while (isinstance(res, list)
+               and len(res) > 0
+               and isinstance(res[0], list)):
+            res = res[0]
 
-        next_token_id = int(max(range(len(logits)), key=lambda i: logits[i]))
+        return res
 
-        current_input_ids.append(next_token_id)
-        generated_tokens.append(next_token_id)
+    @staticmethod
+    def _decode_token_string(s: str) -> str:
+        return s.replace(u"\u2581", ' ').replace('Ġ', ' ')
 
-        if current_text.endswith("}}"):
-            break
+    @staticmethod
+    def _test_end_json2(response: str):
+        braces = 0
+        for i, char in enumerate(response):
+            braces += (char == '{')
+            braces -= (char == '}')
 
-    # print("".join([model.decode(t) for t in generated_tokens]))
-    return test_end_json2("".join([model.decode(t) for t in generated_tokens]))
-    # return "".join([model.decode(t) for t in generated_tokens])
+            if i > 0 and braces == 0:
+                break
 
-def test_end_json2(response: str):
-    braces = 0
-    for i, char in enumerate(response):
-        braces += (char == '{')
-        braces -= (char == '}')
+        return response[:i+1]
 
-        if i > 0 and braces == 0:
-            break
-
-    return response[:i+1]
-
-def test_end_json(response: str):
-    opened = response.count('{')
-    closed = 0
-    for i, char in enumerate(response):
-        if char == '}':
-            closed += 1
-        if opened == closed:
-            return response[:i+1]
+    @staticmethod
+    def _test_end_json(response: str):
+        opened = response.count('{')
+        closed = 0
+        for i, char in enumerate(response):
+            if char == '}':
+                closed += 1
+            if opened == closed:
+                return response[:i+1]

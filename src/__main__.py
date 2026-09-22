@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
+from pathlib import Path
+import json
 
-from .parsers import ToolParser
-from .algo import algo
+from .parsers import ToolParser, PromptParser
+from .algo import FunctionCalling
 
 
-def main() -> None:
+def parse_args() -> Namespace:
     input_parser = ArgumentParser()
 
     input_parser.add_argument(
@@ -28,11 +30,22 @@ def main() -> None:
         required=False
     )
 
-    args = input_parser.parse_args()
-    print(args.input)
+    return input_parser.parse_args()
 
-    func_list = ToolParser.parse("data/input/functions_definition.json")
-    print(algo("Greet Shrek", func_list))
+
+def save_output(file: Path, output: list[dict]) -> None:
+    file.parent.mkdir(exist_ok=True, parents=True)
+    file.write_text(json.dumps(output, indent=4, sort_keys=True))
+
+
+def main() -> None:
+    args = parse_args()
+    tools = ToolParser.parse(args.functions_definition)
+    prompts = PromptParser.parse(args.input)
+
+    fc = FunctionCalling(tools)
+    output = fc.run_prompts(prompts)
+    save_output(Path(args.output), output)
 
 
 if __name__ == "__main__":

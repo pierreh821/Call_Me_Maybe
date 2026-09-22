@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Any
 import json
 
@@ -6,8 +6,12 @@ from .models import Tool
 
 
 class Parser(ABC):
+    @abstractmethod
+    def parse(cls, file: str) -> list[Tool] | list[str]:
+        pass
+
     @staticmethod
-    def load_json(file: str) -> Any:
+    def _load_json(file: str) -> Any:
         with open(file) as f:
             return json.load(f)
 
@@ -15,7 +19,7 @@ class Parser(ABC):
 class ToolParser(Parser):
     @classmethod
     def parse(cls, file: str) -> list[Tool]:
-        raw_func_list = cls.load_json(file)
+        raw_func_list = cls._load_json(file)
         if not isinstance(raw_func_list, list):
             raise SyntaxError("JSON error")
 
@@ -37,7 +41,7 @@ class ToolParser(Parser):
 class PromptParser(Parser):
     @classmethod
     def parse(cls, file: str) -> list[str]:
-        raw_prompt_list = cls.load_json(file)
+        raw_prompt_list = cls._load_json(file)
 
         prompt_list: list[str] = []
         for raw_prompt in raw_prompt_list:
