@@ -1,7 +1,8 @@
 class TypeHandler:
     types = {
         "number": float,
-        "string": str
+        "string": str,
+        "integer": int
         }
 
 
