@@ -16,7 +16,6 @@ class FunctionCalling:
 
     def run_prompts(self,
                     prompts: list[str],
-                    max_workers: int = 5,
                     on_result: Optional[Callable[[list[dict]], None]] = None
                     ) -> list[dict]:
 
@@ -24,7 +23,7 @@ class FunctionCalling:
 
         for prompt in tqdm(prompts, desc="Prompt processing"):
             res_str = self._single_function_call(prompt)
-            print(res_str)
+            print("RES_STR: ", res_str)
             res_dict = json.loads(res_str)
             res_dict["prompt"] = prompt
 
@@ -59,16 +58,16 @@ class FunctionCalling:
         return res_dict
 
     def _single_function_call(self, prompt: str) -> str:
-        prompt = self._format_prompt(prompt)
+        prompt_str = self._format_prompt(prompt)
 
-        current_input_ids = self._tensor_to_token(self.model.encode(prompt))
-        init_ids = self._tensor_to_token(self.model.encode('{'))
+        current_input_ids = self._tensor_to_token(
+            self.model.encode(prompt_str))
 
-        generated_tokens: list[int] = list(init_ids)
+        generated_tokens: list[int] = []
+        closing_braces_count = 0
 
         for _ in range(MAX_TOKENS):
             logits = self.model.get_logits_from_input_ids(current_input_ids)
-            current_text = self.model.decode(generated_tokens)
 
             next_token_id = int(max(range(len(logits)),
                                     key=lambda i: logits[i]))
@@ -76,11 +75,15 @@ class FunctionCalling:
             current_input_ids.append(next_token_id)
             generated_tokens.append(next_token_id)
 
-            if current_text.endswith("}}"):
+            latest_char = self.model.decode([next_token_id])
+            closing_braces_count += latest_char.count('}')
+
+            if closing_braces_count >= 2:
                 break
 
-        return self._close_json("".join([self.model.decode(t)
-                                         for t in generated_tokens]))
+        raw_output = '{' + self.model.decode(generated_tokens)
+        # "".join([self.model.decode(t) t in generated_tokens])
+        return self._close_json(raw_output)
 
     def _format_prompt(self, prompt: str) -> str:
         tools_list = ""
