@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 import json
 
-from .models import Tool
+from .tools import Tool
 
 
 class Parser(ABC):

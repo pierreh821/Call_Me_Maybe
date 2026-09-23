@@ -4,7 +4,7 @@ from typing import Callable, Optional
 from tqdm import tqdm
 from torch import Tensor
 
-from .models import Tool
+from .tools import Tool
 
 MAX_TOKENS = 100
 
@@ -12,7 +12,7 @@ MAX_TOKENS = 100
 class FunctionCalling:
     def __init__(self, tools: list[Tool]):
         self.tools = tools
-        self.model = llm_sdk.Small_LLM_Model()
+        self.model = llm_sdk.Small_LLM_Model()  # type: ignore
 
     def run_prompts(self,
                     prompts: list[str],
@@ -24,6 +24,7 @@ class FunctionCalling:
 
         for prompt in tqdm(prompts, desc="Prompt processing"):
             res_str = self._single_function_call(prompt)
+            print(res_str)
             res_dict = json.loads(res_str)
             res_dict["prompt"] = prompt
 
@@ -34,11 +35,26 @@ class FunctionCalling:
 
         return results
 
-    @staticmethod
-    def _format_sgl_res(res_dict: dict) -> dict:
-        for key, val in res_dict.get("parameters", {}).items():
-            if isinstance(val, float) and val.is_integer():
-                res_dict["parameters"][key] = int(val)
+    def _format_sgl_res(self, res_dict: dict) -> dict:
+        tool = None
+        print(f"searching tool, res_dict: {res_dict}, "
+              f"res_dict.name: {res_dict.get("name")}")
+        for t in self.tools:
+            if t.name == res_dict.get("name"):
+                tool = t
+
+        if tool is None:
+            print(f"tool not found, res_dict: {res_dict}, "
+                  f"res_dict.name: {res_dict.get("name")}")
+            return {}
+
+        for p_name, p_val in res_dict.get("parameters", {}).items():
+            p_type = tool.parameters.get(p_name)
+            if p_type is None:
+                print(f"parameter not found in definitions: {p_name}, existing"
+                      f" parameters: {res_dict.get("parameters", {}).keys()}")
+                continue
+            res_dict["parameters"][p_name] = p_type(p_val)
 
         return res_dict
 
@@ -63,10 +79,8 @@ class FunctionCalling:
             if current_text.endswith("}}"):
                 break
 
-        # print("".join([model.decode(t) for t in generated_tokens]))
-        return self._test_end_json2("".join([self.model.decode(t)
-                                            for t in generated_tokens]))
-        # return "".join([model.decode(t) for t in generated_tokens])
+        return self._close_json("".join([self.model.decode(t)
+                                         for t in generated_tokens]))
 
     def _format_prompt(self, prompt: str) -> str:
         tools_list = ""
@@ -82,8 +96,8 @@ class FunctionCalling:
             "Produce the output as a JSON with a top-level key called 'name' "
             "and a second-level key named 'parameters' like this:\n"
             '{"name": "<function_name>", "parameters": {<args>}}\n'
-            # "If the prompt gives a string with quotes, reproduce the quotes in"
-            " the response.\n"
+            "Do not use parameters that are not given in the available "
+            "functions.\n"
             "The output ends when the JSON is properly closed.\n"
             f"User query: {prompt}\n"
             "Clean JSON output: {"
@@ -105,7 +119,7 @@ class FunctionCalling:
         return s.replace(u"\u2581", ' ').replace('Ġ', ' ')
 
     @staticmethod
-    def _test_end_json2(response: str) -> str:
+    def _close_json(response: str) -> str:
         braces = 0
         i = 0
         for i, char in enumerate(response):
@@ -116,15 +130,3 @@ class FunctionCalling:
                 break
 
         return response[:i+1]
-
-    @staticmethod
-    def _test_end_json(response: str) -> str | None:
-        opened = response.count('{')
-        closed = 0
-        for i, char in enumerate(response):
-            if char == '}':
-                closed += 1
-            if opened == closed:
-                return response[:i+1]
-
-        return None

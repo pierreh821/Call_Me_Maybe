@@ -1,4 +1,4 @@
-from .models import Tool
+from .tools import Tool
 from .parsers import ToolParser, PromptParser
 
 __all__ = ["Tool",
