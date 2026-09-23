@@ -1,6 +1,9 @@
 import llm_sdk
 import json
+from typing import Callable, Optional
+from tqdm import tqdm
 from torch import Tensor
+
 from .models import Tool
 
 MAX_TOKENS = 100
@@ -11,24 +14,33 @@ class FunctionCalling:
         self.tools = tools
         self.model = llm_sdk.Small_LLM_Model()
 
-    def run_prompts(self, prompts: list[str]) -> list[dict]:
-        output: list[dict] = []
-        for p in prompts:
-            res_str = self._single_function_call(p)
-            res_dict = json.loads(res_str)
-            res_dict["prompt"] = p
-            output.append(res_dict)
+    def run_prompts(self,
+                    prompts: list[str],
+                    max_workers: int = 5,
+                    on_result: Optional[Callable[[list[dict]], None]] = None
+                    ) -> list[dict]:
 
-        return self._format_output(output)
+        results = []
+
+        for prompt in tqdm(prompts, desc="Prompt processing"):
+            res_str = self._single_function_call(prompt)
+            res_dict = json.loads(res_str)
+            res_dict["prompt"] = prompt
+
+            results.append(self._format_sgl_res(res_dict))
+
+            if on_result:
+                on_result(results)
+
+        return results
 
     @staticmethod
-    def _format_output(output: list[dict]):
-        for res in output:
-            for key, val in res["parameters"].items():
-                if val.is_integer():
-                    res["parameters"][key] = int(val)
+    def _format_sgl_res(res_dict: dict) -> dict:
+        for key, val in res_dict.get("parameters", {}).items():
+            if isinstance(val, float) and val.is_integer():
+                res_dict["parameters"][key] = int(val)
 
-        return output
+        return res_dict
 
     def _single_function_call(self, prompt: str) -> str:
         prompt = self._format_prompt(prompt)
@@ -70,6 +82,8 @@ class FunctionCalling:
             "Produce the output as a JSON with a top-level key called 'name' "
             "and a second-level key named 'parameters' like this:\n"
             '{"name": "<function_name>", "parameters": {<args>}}\n'
+            # "If the prompt gives a string with quotes, reproduce the quotes in"
+            " the response.\n"
             "The output ends when the JSON is properly closed.\n"
             f"User query: {prompt}\n"
             "Clean JSON output: {"
@@ -91,8 +105,9 @@ class FunctionCalling:
         return s.replace(u"\u2581", ' ').replace('Ġ', ' ')
 
     @staticmethod
-    def _test_end_json2(response: str):
+    def _test_end_json2(response: str) -> str:
         braces = 0
+        i = 0
         for i, char in enumerate(response):
             braces += (char == '{')
             braces -= (char == '}')
@@ -103,7 +118,7 @@ class FunctionCalling:
         return response[:i+1]
 
     @staticmethod
-    def _test_end_json(response: str):
+    def _test_end_json(response: str) -> str | None:
         opened = response.count('{')
         closed = 0
         for i, char in enumerate(response):
@@ -111,3 +126,5 @@ class FunctionCalling:
                 closed += 1
             if opened == closed:
                 return response[:i+1]
+
+        return None
