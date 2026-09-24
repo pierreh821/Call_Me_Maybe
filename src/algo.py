@@ -17,41 +17,40 @@ class FunctionCalling:
     def run_prompts(self,
                     prompts: list[str],
                     on_result: Optional[Callable[[list[dict]], None]] = None
-                    ) -> list[dict]:
+                    ) -> tuple[list[dict], list[str]]:
 
         results = []
+        errors = []
 
         for prompt in tqdm(prompts, desc="Prompt processing"):
             res_str = self._single_function_call(prompt)
-            print("RES_STR: ", res_str)
-            res_dict = json.loads(res_str)
-            res_dict["prompt"] = prompt
+            try:
+                res_dict = json.loads(res_str)
+                res_dict["prompt"] = prompt
 
-            results.append(self._format_sgl_res(res_dict))
+                results.append(self._format_sgl_res(res_dict))
 
-            if on_result:
-                on_result(results)
+                if on_result:
+                    on_result(results)
 
-        return results
+            except json.decoder.JSONDecodeError:
+                errors.append(f"Error on prompt '{prompt}'. "
+                              f"Response was '{res_str}'.")
+
+        return results, errors
 
     def _format_sgl_res(self, res_dict: dict) -> dict:
         tool = None
-        print(f"searching tool, res_dict: {res_dict}, "
-              f"res_dict.name: {res_dict.get("name")}")
         for t in self.tools:
             if t.name == res_dict.get("name"):
                 tool = t
 
         if tool is None:
-            print(f"tool not found, res_dict: {res_dict}, "
-                  f"res_dict.name: {res_dict.get("name")}")
             return {}
 
         for p_name, p_val in res_dict.get("parameters", {}).items():
             p_type = tool.parameters.get(p_name)
             if p_type is None:
-                print(f"parameter not found in definitions: {p_name}, existing"
-                      f" parameters: {res_dict.get("parameters", {}).keys()}")
                 continue
             res_dict["parameters"][p_name] = p_type(p_val)
 
@@ -64,7 +63,7 @@ class FunctionCalling:
             self.model.encode(prompt_str))
 
         generated_tokens: list[int] = []
-        closing_braces_count = 0
+        open_braces = 1
 
         for _ in range(MAX_TOKENS):
             logits = self.model.get_logits_from_input_ids(current_input_ids)
@@ -76,14 +75,13 @@ class FunctionCalling:
             generated_tokens.append(next_token_id)
 
             latest_char = self.model.decode([next_token_id])
-            closing_braces_count += latest_char.count('}')
+            open_braces += latest_char.count('{')
+            open_braces -= latest_char.count('}')
 
-            if closing_braces_count >= 2:
+            if open_braces <= 0:
                 break
 
-        raw_output = '{' + self.model.decode(generated_tokens)
-        # "".join([self.model.decode(t) t in generated_tokens])
-        return self._close_json(raw_output)
+        return '{' + self.model.decode(generated_tokens)
 
     def _format_prompt(self, prompt: str) -> str:
         tools_list = ""
@@ -120,16 +118,3 @@ class FunctionCalling:
     @staticmethod
     def _decode_token_string(s: str) -> str:
         return s.replace(u"\u2581", ' ').replace('Ġ', ' ')
-
-    @staticmethod
-    def _close_json(response: str) -> str:
-        braces = 0
-        i = 0
-        for i, char in enumerate(response):
-            braces += (char == '{')
-            braces -= (char == '}')
-
-            if i > 0 and braces == 0:
-                break
-
-        return response[:i+1]
