@@ -4,13 +4,13 @@ from typing import Callable, Optional
 from tqdm import tqdm  # type: ignore
 from torch import Tensor
 
-from .tools import Tool
+from .function_definition import FunctionDefinition
 
 MAX_TOKENS = 100
 
 
-class FunctionCalling:
-    def __init__(self, tools: list[Tool]):
+class FunctionCaller:
+    def __init__(self, tools: list[FunctionDefinition]):
         self.tools = tools
         self.model = llm_sdk.Small_LLM_Model()  # type: ignore
         self.errors: dict[str, list[str]] = {}
@@ -24,13 +24,13 @@ class FunctionCalling:
 
         for prompt in tqdm(prompts, desc="Prompt processing"):
             self.errors[prompt] = []
-            res_str = self._single_function_call(prompt)
+            res_str = self._generate_json(prompt)
 
             try:
                 res_dict = json.loads(res_str)
                 res_dict["prompt"] = prompt
 
-                results.append(self._format_sgl_res(res_dict, prompt))
+                results.append(self._normalize_result(res_dict, prompt))
 
                 if on_result:
                     on_result(results)
@@ -42,7 +42,7 @@ class FunctionCalling:
 
         return results, self.errors
 
-    def _format_sgl_res(self, res_dict: dict, prompt: str) -> dict:
+    def _normalize_result(self, res_dict: dict, prompt: str) -> dict:
         tool = None
         tool_name = res_dict.get("name")
 
@@ -70,20 +70,20 @@ class FunctionCalling:
             try:
                 res_dict["parameters"][p_name] = p_type(p_val)
             except ValueError:
-                err_type = self._type_repr(type(p_val))
+                err_type = type(p_val).__name__
                 self.errors[prompt] += [
                     f"Using {tool.name}, cannot convert parameter '{p_name}' "
                     f"value: '{p_val}' ({err_type}, "
-                    f"expected {self._type_repr(p_type)}). Maybe check your "
+                    f"expected {p_type.__name__}). Maybe check your "
                     "prompt?"
                     ]
 
         return res_dict
 
-    def _single_function_call(self, prompt: str) -> str:
-        prompt_str = self._format_prompt(prompt)
+    def _generate_json(self, prompt: str) -> str:
+        prompt_str = self.build_prompt(prompt)
 
-        current_input_ids = self._tensor_to_token(
+        current_input_ids = self._to_token_list(
             self.model.encode(prompt_str))
 
         generated_tokens: list[int] = []
@@ -107,14 +107,10 @@ class FunctionCalling:
 
         return str('{' + self.model.decode(generated_tokens))
 
-    @staticmethod
-    def _type_repr(t: type | None) -> str:
-        return str(t).split("'")[1] if t is not None else "None"
-
-    def _format_prompt(self, prompt: str) -> str:
+    def build_prompt(self, prompt: str) -> str:
         tools_list = ""
         for tool in self.tools:
-            parameters = [f"{p_name}: {self._type_repr(p_type)}"
+            parameters = [f"{p_name}: {p_type.__name__}"
                           for p_name, p_type in tool.parameters.items()]
             param_str = ", ".join(parameters)
             tools_list += f"- {tool.name}({param_str}): {tool.description}\n"
@@ -137,7 +133,7 @@ class FunctionCalling:
         )
 
     @staticmethod
-    def _tensor_to_token(tensor: Tensor) -> list[int]:
+    def _to_token_list(tensor: Tensor) -> list[int]:
         res = tensor.tolist() if hasattr(tensor, "tolist") else list(tensor)
 
         while (isinstance(res, list)
@@ -146,7 +142,3 @@ class FunctionCalling:
             res = res[0]
 
         return res
-
-    @staticmethod
-    def _decode_token_string(s: str) -> str:
-        return s.replace(u"\u2581", ' ').replace('Ġ', ' ')

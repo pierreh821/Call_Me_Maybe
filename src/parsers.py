@@ -3,7 +3,7 @@ from pydantic import BaseModel, ValidationError
 from typing import Any
 import json
 
-from .tools import Tool
+from .function_definition import FunctionDefinition
 
 
 class PromptModel(BaseModel):
@@ -12,7 +12,7 @@ class PromptModel(BaseModel):
 
 class Parser(ABC):
     @abstractmethod
-    def parse(cls, file: str) -> list[Tool] | list[str]:
+    def parse(cls, file: str) -> list[FunctionDefinition] | list[str]:
         pass
 
     @staticmethod
@@ -23,7 +23,7 @@ class Parser(ABC):
 
 class ToolParser(Parser):
     @classmethod
-    def parse(cls, file: str) -> list[Tool]:
+    def parse(cls, file: str) -> list[FunctionDefinition]:
         try:
             raw_func_list = cls._load_json(file)
         except json.decoder.JSONDecodeError as e:
@@ -33,12 +33,12 @@ class ToolParser(Parser):
         if not isinstance(raw_func_list, list):
             raise SyntaxError("JSON error: root element must be a list")
 
-        func_list: list[Tool] = []
+        func_list: list[FunctionDefinition] = []
         for raw_func in raw_func_list:
             try:
-                tool = Tool(**raw_func)
+                tool = FunctionDefinition(**raw_func)
                 func_list.append(tool)
-            except (ValidationError, ValueError) as e:
+            except (ValidationError, ValueError, TypeError) as e:
                 raise SyntaxError(f"JSON Error: invalid tool structure -> {e}")
 
         return func_list

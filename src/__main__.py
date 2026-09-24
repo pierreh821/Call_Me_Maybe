@@ -6,7 +6,7 @@ import json
 import sys
 
 from .parsers import ToolParser, PromptParser
-from .algo import FunctionCalling
+from .caller import FunctionCaller
 
 
 class Colors:
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         print(e)
         sys.exit(0)
 
-    fc = FunctionCalling(tools)
+    fc = FunctionCaller(tools)
 
     def incremental_save(output_data: list[dict]) -> None:
         save_output(Path(args.output), output_data)
