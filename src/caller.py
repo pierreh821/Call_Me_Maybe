@@ -61,22 +61,31 @@ class FunctionCaller:
         if tool is None:
             return res_dict
 
-        # Check each function parameter type (correct if necessary)
+        # Check parameters
         for p_name, p_val in res_dict.get("parameters", {}).items():
             p_type = tool.parameters.get(p_name)
-            if p_type is None:
-                continue
 
-            try:
-                res_dict["parameters"][p_name] = p_type(p_val)
-            except ValueError:
-                err_type = type(p_val).__name__
-                self.errors[prompt] += [
-                    f"Using {tool.name}, cannot convert parameter '{p_name}' "
-                    f"value: '{p_val}' ({err_type}, "
-                    f"expected {p_type.__name__}). Maybe check your "
-                    "prompt?"
-                    ]
+            # Remove parameters unsolicited keys
+            if p_type is None:
+                res_dict["parameters"].pop(p_name)
+
+            # Convert parameters values to the expected type
+            else:
+                try:
+                    res_dict["parameters"][p_name] = p_type(p_val)
+                except ValueError:
+                    err_type = type(p_val).__name__
+                    self.errors[prompt] += [
+                        f"Using {tool.name}, cannot convert parameter "
+                        f"'{p_name}' value: '{p_val}' ({err_type}, "
+                        f"expected {p_type.__name__}). Maybe check your "
+                        "prompt?"
+                        ]
+
+        # Remove output unsolicited keys
+        for key in res_dict.keys():
+            if key not in ("prompt", "name", "parameters"):
+                res_dict.pop(key)
 
         return res_dict
 
