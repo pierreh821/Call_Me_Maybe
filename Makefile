@@ -1,6 +1,10 @@
 ENV := .venv
 PYTHON := $(ENV)/bin/python
 
+DEFINITION := data/input/functions_definition.json
+INPUT := data/input/function_calling_tests.json
+OUTPUT := data/output/function_calling_results.json
+
 .PHONY: all install run debug clean lint lint-strict
 
 all: run
@@ -9,7 +13,7 @@ install:
 	uv sync
 
 run:
-	uv run python -m src
+	uv run python -m src --functions_definition $(DEFINITION) --input $(INPUT) --output $(OUTPUT)
 
 debug:
 	uv run python -m pdb -m src
