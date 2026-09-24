@@ -13,6 +13,7 @@ class FunctionCalling:
     def __init__(self, tools: list[Tool]):
         self.tools = tools
         self.model = llm_sdk.Small_LLM_Model()  # type: ignore
+        self.errors: list[str] = []
 
     def run_prompts(self,
                     prompts: list[str],
@@ -20,7 +21,6 @@ class FunctionCalling:
                     ) -> tuple[list[dict], list[str]]:
 
         results = []
-        errors = []
 
         for prompt in tqdm(prompts, desc="Prompt processing"):
             res_str = self._single_function_call(prompt)
@@ -34,10 +34,11 @@ class FunctionCalling:
                     on_result(results)
 
             except json.decoder.JSONDecodeError:
-                errors.append(f"Error on prompt '{prompt}'. "
-                              f"Response was '{res_str}'.")
+                self.errors.append(
+                    f"A fatal error occured on prompt '{prompt}' "
+                    "(invalid json). Its result will be omitted.")
 
-        return results, errors
+        return results, self.errors
 
     def _format_sgl_res(self, res_dict: dict) -> dict:
         tool = None
@@ -63,7 +64,16 @@ class FunctionCalling:
             p_type = tool.parameters.get(p_name)
             if p_type is None:
                 continue
-            res_dict["parameters"][p_name] = p_type(p_val)
+
+            try:
+                res_dict["parameters"][p_name] = p_type(p_val)
+            except ValueError:
+                err_type = self._type_repr(type(p_val))
+                self.errors.append(
+                    f"Cannot convert parameter '{p_name}' value: '{p_val}' "
+                    f"({err_type}, expected {self._type_repr(p_type)})."
+                    "Maybe check your prompt?"
+                    )
 
         return res_dict
 
@@ -92,12 +102,16 @@ class FunctionCalling:
             if open_braces <= 0:
                 break
 
-        return '{' + self.model.decode(generated_tokens)
+        return str('{' + self.model.decode(generated_tokens))
+
+    @staticmethod
+    def _type_repr(t: type | None) -> str:
+        return str(t).split("'")[1] if t is not None else "None"
 
     def _format_prompt(self, prompt: str) -> str:
         tools_list = ""
         for tool in self.tools:
-            parameters = [f'''{p_name}: {str(p_type).split("'")[1]}'''
+            parameters = [f"{p_name}: {self._type_repr(p_type)}"
                           for p_name, p_type in tool.parameters.items()]
             param_str = ", ".join(parameters)
             tools_list += f"- {tool.name}({param_str}): {tool.description}\n"
