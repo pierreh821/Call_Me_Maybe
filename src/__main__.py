@@ -43,10 +43,32 @@ def save_output(file: Path, output: list[dict]) -> None:
     file.write_text(json.dumps(output, indent=4, sort_keys=True))
 
 
+def print_errors(errors: dict[str, list[str]]) -> None:
+    found_error = False
+
+    for prompt, err in errors.items():
+        if len(err) == 0:
+            continue
+        elif not found_error:
+            print(
+                Colors.B_RD + "\n=== Errors detected ===\n" + Colors.RS +
+                "Pay attention to the following errors, they may or may not be"
+                " problematic."
+                )
+            found_error = True
+
+        print(f'- On prompt "{prompt}"', end='')
+        print('\n  - '.join([''] + err))
+
+
 def main() -> None:
     args = parse_args()
-    tools = ToolParser.parse(args.functions_definition)
-    prompts = PromptParser.parse(args.input)
+    try:
+        tools = ToolParser.parse(args.functions_definition)
+        prompts = PromptParser.parse(args.input)
+    except SyntaxError as e:
+        print(e)
+        return
 
     fc = FunctionCalling(tools)
 
@@ -54,14 +76,7 @@ def main() -> None:
         save_output(Path(args.output), output_data)
 
     _, errors = fc.run_prompts(prompts, on_result=incremental_save)
-    if len(errors) > 0:
-        print()
-        print(
-            Colors.B_RD + "=== Errors detected ===\n" + Colors.RS +
-            "Pay attention to the following errors, they may or may not be "
-            "problematic."
-            '\n - '.join(['', *errors])
-            )
+    print_errors(errors)
 
 
 if __name__ == "__main__":

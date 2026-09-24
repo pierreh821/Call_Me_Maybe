@@ -13,34 +13,36 @@ class FunctionCalling:
     def __init__(self, tools: list[Tool]):
         self.tools = tools
         self.model = llm_sdk.Small_LLM_Model()  # type: ignore
-        self.errors: list[str] = []
+        self.errors: dict[str, list[str]] = {}
 
     def run_prompts(self,
                     prompts: list[str],
                     on_result: Optional[Callable[[list[dict]], None]] = None
-                    ) -> tuple[list[dict], list[str]]:
+                    ) -> tuple[list[dict], dict[str, list[str]]]:
 
         results = []
 
         for prompt in tqdm(prompts, desc="Prompt processing"):
+            self.errors[prompt] = []
             res_str = self._single_function_call(prompt)
+
             try:
                 res_dict = json.loads(res_str)
                 res_dict["prompt"] = prompt
 
-                results.append(self._format_sgl_res(res_dict))
+                results.append(self._format_sgl_res(res_dict, prompt))
 
                 if on_result:
                     on_result(results)
 
             except json.decoder.JSONDecodeError:
-                self.errors.append(
-                    f"A fatal error occured on prompt '{prompt}' "
-                    "(invalid json). Its result will be omitted.")
+                self.errors[prompt] += [
+                    "A fatal error occured (invalid json). "
+                    "Its result will be omitted."]
 
         return results, self.errors
 
-    def _format_sgl_res(self, res_dict: dict) -> dict:
+    def _format_sgl_res(self, res_dict: dict, prompt: str) -> dict:
         tool = None
         tool_name = res_dict.get("name")
 
@@ -69,11 +71,12 @@ class FunctionCalling:
                 res_dict["parameters"][p_name] = p_type(p_val)
             except ValueError:
                 err_type = self._type_repr(type(p_val))
-                self.errors.append(
-                    f"Cannot convert parameter '{p_name}' value: '{p_val}' "
-                    f"({err_type}, expected {self._type_repr(p_type)})."
-                    "Maybe check your prompt?"
-                    )
+                self.errors[prompt] += [
+                    f"Using {tool.name}, cannot convert parameter '{p_name}' "
+                    f"value: '{p_val}' ({err_type}, "
+                    f"expected {self._type_repr(p_type)}). Maybe check your "
+                    "prompt?"
+                    ]
 
         return res_dict
 

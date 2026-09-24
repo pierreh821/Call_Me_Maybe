@@ -19,7 +19,12 @@ class Parser(ABC):
 class ToolParser(Parser):
     @classmethod
     def parse(cls, file: str) -> list[Tool]:
-        raw_func_list = cls._load_json(file)
+        try:
+            raw_func_list = cls._load_json(file)
+        except json.decoder.JSONDecodeError as e:
+            raise SyntaxError(
+                f"Invalid JSON syntax on functions definitions input:\n  {e}")
+
         if not isinstance(raw_func_list, list):
             raise SyntaxError("JSON error")
 
@@ -41,7 +46,10 @@ class ToolParser(Parser):
 class PromptParser(Parser):
     @classmethod
     def parse(cls, file: str) -> list[str]:
-        raw_prompt_list = cls._load_json(file)
+        try:
+            raw_prompt_list = cls._load_json(file)
+        except json.decoder.JSONDecodeError as e:
+            raise SyntaxError(f"Invalid JSON syntax on prompts input:\n  {e}")
 
         prompt_list: list[str] = []
         for raw_prompt in raw_prompt_list:
