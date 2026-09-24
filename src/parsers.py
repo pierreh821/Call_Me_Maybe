@@ -34,10 +34,9 @@ class ToolParser(Parser):
                 raise SyntaxError("JSON Error")
 
             func_list.append(Tool(
-                raw_func["name"],
-                raw_func["description"],
-                raw_func["parameters"],
-                raw_func["returns"]
+                name=raw_func["name"],
+                description=raw_func["description"],
+                parameters=raw_func["parameters"]
             ))
 
         return func_list

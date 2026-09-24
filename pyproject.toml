@@ -11,7 +11,8 @@ dependencies = [
     "flake8",
     "mypy",
     "llm_sdk",
-    "tqdm"
+    "tqdm",
+    "Pydantic"
 ]
 
 [tool.uv.sources]
