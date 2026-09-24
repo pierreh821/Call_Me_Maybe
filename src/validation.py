@@ -6,6 +6,15 @@ from .models import FunctionCallResult
 
 def _find_function(ref: str | None, functions: list[FunctionDefinition]
                    ) -> FunctionDefinition | None:
+    """Find a function by its exact name or optional ``fn_`` prefix.
+
+    Args:
+        ref: Function name returned by the model.
+        functions: Available function definitions.
+
+    Returns:
+        The matching definition, or ``None`` when no match exists.
+    """
     if not isinstance(ref, str):
         return None
 
@@ -34,6 +43,16 @@ def _coerce(value: Any, expected: type) -> Any:
 def normalize_call(raw: Any, functions: list[FunctionDefinition],
                    prompt: str
                    ) -> tuple[FunctionCallResult | None, list[str]]:
+    """Validate and normalize one raw model function call.
+
+    Args:
+        raw: JSON-decoded model output.
+        functions: Available function definitions.
+        prompt: Original user prompt associated with the output.
+
+    Returns:
+        A validated result and an empty error list, or ``None`` and errors.
+    """
 
     if not isinstance(raw, dict):
         return None, ["The model output is not a JSON object."]

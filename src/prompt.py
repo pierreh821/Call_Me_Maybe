@@ -2,6 +2,15 @@ from .function_definition import FunctionDefinition
 
 
 def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
+    """Build the model prompt from available functions and a user query.
+
+    Args:
+        functions: Function definitions to present to the model.
+        prompt: User's natural-language request.
+
+    Returns:
+        A prompt requesting a structured function call.
+    """
     fn_list = ""
     for fn in functions:
         parameters = [f"{p_name}: {p_type.__name__}"

@@ -5,10 +5,21 @@ MAX_TOKENS = 100
 
 
 class JsonGenerator:
+    """Generate a JSON object with greedy, model-guided token decoding."""
+
     def __init__(self) -> None:
+        """Initialize the default small language model."""
         self.model = llm_sdk.Small_LLM_Model()  # type: ignore
 
     def generate(self, prompt: str) -> str:
+        """Generate a JSON object from a prepared function-calling prompt.
+
+        Args:
+            prompt: Prompt containing function definitions and a user query.
+
+        Returns:
+            The generated JSON object as text.
+        """
         current_input_ids = self._to_token_list(
             self.model.encode(prompt))
 
@@ -35,6 +46,14 @@ class JsonGenerator:
 
     @staticmethod
     def _to_token_list(tensor: Any) -> list[int]:
+        """Flatten an SDK tensor-like value into a list of token IDs.
+
+        Args:
+            tensor: Tensor-like value returned by the SDK encoder.
+
+        Returns:
+            Token IDs represented as a one-dimensional list.
+        """
         res = tensor.tolist() if hasattr(tensor, "tolist") else list(tensor)
 
         while (isinstance(res, list)

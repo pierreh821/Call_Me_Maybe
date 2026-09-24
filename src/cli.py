@@ -8,11 +8,18 @@ from .models import FunctionCallResult
 
 
 class Colors:
+    """ANSI escape sequences used by the command-line interface."""
+
     RS = "\033[0m"
     B_RD = "\033[1;31m"
 
 
 def print_errors(errors: dict[str, list[str]]) -> None:
+    """Print non-empty prompt errors in a readable format.
+
+    Args:
+        errors: Error messages grouped by their original prompt.
+    """
     found_error = False
 
     for prompt, err in errors.items():
@@ -31,6 +38,11 @@ def print_errors(errors: dict[str, list[str]]) -> None:
 
 
 def parse_args() -> Namespace:
+    """Parse command-line paths for definitions, prompts, and output.
+
+    Returns:
+        Parsed command-line arguments.
+    """
     input_parser = ArgumentParser()
 
     input_parser.add_argument(
@@ -56,6 +68,11 @@ def parse_args() -> Namespace:
 
 
 def main() -> int:
+    """Load inputs, generate results, and save the output file.
+
+    Returns:
+        Zero on success, or one when an input file cannot be loaded.
+    """
     args = parse_args()
 
     try:
@@ -66,6 +83,11 @@ def main() -> int:
         return (1)
 
     def incremental_save(output_data: list[FunctionCallResult]) -> None:
+        """Persist results incrementally while prompts are processed.
+
+        Args:
+            output_data: Results generated up to the current prompt.
+        """
         save_result(Path(args.output), output_data)
 
     output, errors = FunctionCaller(functions).run(

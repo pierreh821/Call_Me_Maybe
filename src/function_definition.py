@@ -9,6 +9,8 @@ JSON_TYPES = {
 
 
 class FunctionDefinition(BaseModel):
+    """Validated description of a callable function and its parameters."""
+
     name: str
     description: str
     parameters: dict[str, type]
@@ -17,6 +19,17 @@ class FunctionDefinition(BaseModel):
     @classmethod
     def _format_parameters(cls, raw_param: dict[str, dict[str, str]]
                            ) -> dict[str, type]:
+        """Convert JSON parameter type names into Python types.
+
+        Args:
+            raw_param: Raw parameter definitions loaded from JSON.
+
+        Returns:
+            A mapping from parameter names to their Python types.
+
+        Raises:
+            ValueError: If the parameter structure or type is unsupported.
+        """
         if not isinstance(raw_param, dict):
             raise ValueError("Parameters must be a dictionary")
 
