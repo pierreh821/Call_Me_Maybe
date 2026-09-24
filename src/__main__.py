@@ -8,6 +8,11 @@ from .parsers import ToolParser, PromptParser
 from .algo import FunctionCalling
 
 
+class Colors:
+    RS = "\033[0m"
+    B_RD = "\033[1;31m"
+
+
 def parse_args() -> Namespace:
     input_parser = ArgumentParser()
 
@@ -50,7 +55,13 @@ def main() -> None:
 
     _, errors = fc.run_prompts(prompts, on_result=incremental_save)
     if len(errors) > 0:
-        print('\n'.join(errors))
+        print()
+        print(
+            Colors.B_RD + "=== Errors detected ===\n" + Colors.RS +
+            "Pay attention to the following errors, they may or may not be "
+            "problematic."
+            '\n - '.join(['', *errors])
+            )
 
 
 if __name__ == "__main__":
