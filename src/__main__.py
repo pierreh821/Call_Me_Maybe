@@ -67,7 +67,7 @@ if __name__ == "__main__":
     try:
         tools = ToolParser.parse(args.functions_definition)
         prompts = PromptParser.parse(args.input)
-    except SyntaxError as e:
+    except (SyntaxError, FileNotFoundError) as e:
         print(e)
         sys.exit(0)
 

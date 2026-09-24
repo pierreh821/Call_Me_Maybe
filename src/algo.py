@@ -1,7 +1,7 @@
 import llm_sdk
 import json
 from typing import Callable, Optional
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 from torch import Tensor
 
 from .tools import Tool

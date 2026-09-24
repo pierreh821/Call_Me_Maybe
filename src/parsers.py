@@ -1,8 +1,13 @@
 from abc import ABC, abstractmethod
+from pydantic import BaseModel, ValidationError
 from typing import Any
 import json
 
 from .tools import Tool
+
+
+class PromptModel(BaseModel):
+    prompt: str
 
 
 class Parser(ABC):
@@ -26,18 +31,15 @@ class ToolParser(Parser):
                 f"Invalid JSON syntax on functions definitions input:\n  {e}")
 
         if not isinstance(raw_func_list, list):
-            raise SyntaxError("JSON error")
+            raise SyntaxError("JSON error: root element must be a list")
 
         func_list: list[Tool] = []
         for raw_func in raw_func_list:
-            if not Tool.is_valid(raw_func):
-                raise SyntaxError("JSON Error")
-
-            func_list.append(Tool(
-                name=raw_func["name"],
-                description=raw_func["description"],
-                parameters=raw_func["parameters"]
-            ))
+            try:
+                tool = Tool(**raw_func)
+                func_list.append(tool)
+            except (ValidationError, ValueError) as e:
+                raise SyntaxError(f"JSON Error: invalid tool structure -> {e}")
 
         return func_list
 
@@ -50,14 +52,15 @@ class PromptParser(Parser):
         except json.decoder.JSONDecodeError as e:
             raise SyntaxError(f"Invalid JSON syntax on prompts input:\n  {e}")
 
+        if not isinstance(raw_prompt_list, list):
+            raise SyntaxError("JSON Error: prompts root must be a list")
+
         prompt_list: list[str] = []
         for raw_prompt in raw_prompt_list:
-            if "prompt" not in raw_prompt.keys():
-                raise SyntaxError("Prompt not provided")
-
-            if not isinstance(raw_prompt["prompt"], str):
-                raise SyntaxError("Prompt must be a string")
-
-            prompt_list.append(raw_prompt["prompt"])
+            try:
+                item = PromptModel(**raw_prompt)
+                prompt_list.append(item.prompt)
+            except (ValidationError, TypeError):
+                raise SyntaxError("Prompt not provided or invalid format")
 
         return prompt_list
