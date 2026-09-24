@@ -48,7 +48,9 @@ def main() -> None:
     def incremental_save(output_data: list[dict]) -> None:
         save_output(Path(args.output), output_data)
 
-    fc.run_prompts(prompts, on_result=incremental_save)
+    _, errors = fc.run_prompts(prompts, on_result=incremental_save)
+    if len(errors) > 0:
+        print('\n'.join(errors))
 
 
 if __name__ == "__main__":

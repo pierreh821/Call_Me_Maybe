@@ -17,6 +17,7 @@ debug:
 clean:
 	rm -rf __pycache__ .mypy_cache .pytest_cache
 	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type d -name "Call_me_maybe.egg-info" -exec rm -rf {} +
 
 fclean: clean
 	rm -rf $(ENV)
