@@ -41,13 +41,24 @@ class FunctionCalling:
 
     def _format_sgl_res(self, res_dict: dict) -> dict:
         tool = None
+        tool_name = res_dict.get("name")
+
+        if tool_name is None:
+            return res_dict
+
+        # Get the right function
         for t in self.tools:
-            if t.name == res_dict.get("name"):
+            if t.name == tool_name:
+                tool = t
+
+            elif t.name == ('fn_' + tool_name):
+                res_dict["name"] = t.name
                 tool = t
 
         if tool is None:
-            return {}
+            return res_dict
 
+        # Check each function parameter type (correct if necessary)
         for p_name, p_val in res_dict.get("parameters", {}).items():
             p_type = tool.parameters.get(p_name)
             if p_type is None:
@@ -97,6 +108,10 @@ class FunctionCalling:
             "Produce the output as a JSON with a top-level key called 'name' "
             "and a second-level key named 'parameters' like this:\n"
             '{"name": "<function_name>", "parameters": {<args>}}\n'
+            "Preserve ALL exact quotes, punctuation, and characters from the "
+            "user query verbatim in string parameters.\n"
+            "If the user query contains quotes inside text, escape them "
+            "properly with \\\" inside the JSON string values.\n"
             "Do not use parameters that are not given in the available "
             "functions.\n"
             "The output ends when the JSON is properly closed.\n"
