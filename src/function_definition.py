@@ -14,6 +14,7 @@ class FunctionDefinition(BaseModel):
     parameters: dict[str, type]
 
     @field_validator("parameters", mode='before')
+    @classmethod
     def _format_parameters(cls, raw_param: dict[str, dict[str, str]]
                            ) -> dict[str, type]:
         if not isinstance(raw_param, dict):
