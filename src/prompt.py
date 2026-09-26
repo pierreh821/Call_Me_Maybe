@@ -1,7 +1,7 @@
-from .function_definition import FunctionDefinition
+from .functions import FunctionDef
 
 
-def build_prompt(functions: list[FunctionDefinition], prompt: str) -> str:
+def build_prompt(functions: list[FunctionDef], prompt: str) -> str:
     """Build the model prompt from available functions and a user query.
 
     Args:

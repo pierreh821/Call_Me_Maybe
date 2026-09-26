@@ -3,7 +3,7 @@ from typing import Any
 from pathlib import Path
 import json
 
-from .function_definition import FunctionDefinition
+from .functions import FunctionDef
 from .models import PromptInput, FunctionCallResult
 
 
@@ -65,7 +65,7 @@ def load_prompts(file: Path) -> list[str]:
     return prompt_list
 
 
-def load_functions(file: Path) -> list[FunctionDefinition]:
+def load_functions(file: Path) -> list[FunctionDef]:
     """Load and validate callable function definitions from JSON.
 
     Args:
@@ -86,10 +86,10 @@ def load_functions(file: Path) -> list[FunctionDefinition]:
     if not isinstance(raw_func_list, list):
         raise InputError("JSON error: root element must be a list")
 
-    func_list: list[FunctionDefinition] = []
+    func_list: list[FunctionDef] = []
     for raw_func in raw_func_list:
         try:
-            tool = FunctionDefinition(**raw_func)
+            tool = FunctionDef(**raw_func)
             func_list.append(tool)
         except (ValidationError, ValueError, TypeError) as e:
             raise InputError(f"JSON Error: invalid tool structure -> {e}")

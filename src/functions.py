@@ -8,7 +8,7 @@ JSON_TYPES = {
         }
 
 
-class FunctionDefinition(BaseModel):
+class FunctionDef(BaseModel):
     """Validated description of a callable function and its parameters."""
 
     name: str

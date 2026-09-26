@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 from .models import FunctionCallResult
 from .prompt import build_prompt
-from .function_definition import FunctionDefinition
+from .functions import FunctionDef
 from .generator import JsonGenerator
 from .validation import normalize_call
 
@@ -12,7 +12,7 @@ from .validation import normalize_call
 class FunctionCaller:
     """Generate and validate function calls for a collection of prompts."""
 
-    def __init__(self, functions: list[FunctionDefinition]) -> None:
+    def __init__(self, functions: list[FunctionDef]) -> None:
         """Initialize a caller with the functions available to the model.
 
         Args:

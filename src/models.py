@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Any
+from functions import FunctionDef
 
 
 class PromptInput(BaseModel):
@@ -12,5 +13,5 @@ class FunctionCallResult(BaseModel):
     """Validated function-call result written to the output JSON file."""
 
     prompt: str
-    name: str
+    function: FunctionDef
     parameters: dict[str, Any]

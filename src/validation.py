@@ -1,11 +1,11 @@
 from typing import Any
 
-from .function_definition import FunctionDefinition
+from .functions import FunctionDef
 from .models import FunctionCallResult
 
 
-def _find_function(ref: str | None, functions: list[FunctionDefinition]
-                   ) -> FunctionDefinition | None:
+def _find_function(ref: str | None, functions: list[FunctionDef]
+                   ) -> FunctionDef | None:
     """Find a function by its exact name or optional ``fn_`` prefix.
 
     Args:
@@ -40,7 +40,7 @@ def _coerce(value: Any, expected: type) -> Any:
     return expected(value)
 
 
-def normalize_call(raw: Any, functions: list[FunctionDefinition],
+def normalize_call(raw: Any, functions: list[FunctionDef],
                    prompt: str
                    ) -> tuple[FunctionCallResult | None, list[str]]:
     """Validate and normalize one raw model function call.
@@ -86,4 +86,4 @@ def normalize_call(raw: Any, functions: list[FunctionDefinition],
         return None, errors
 
     return FunctionCallResult(
-        prompt=prompt, name=fn.name, parameters=parameters), []
+        prompt=prompt, function=fn.name, parameters=parameters), []
