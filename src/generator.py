@@ -1,5 +1,6 @@
 from typing import Any
-import llm_sdk
+from llm_sdk import Small_LLM_Model  # type: ignore
+import numpy as np
 
 MAX_TOKENS = 100
 
@@ -9,7 +10,7 @@ class JsonGenerator:
 
     def __init__(self) -> None:
         """Initialize the default small language model."""
-        self.model = llm_sdk.Small_LLM_Model()  # type: ignore
+        self.model = Small_LLM_Model()
 
     def generate(self, prompt: str) -> str:
         """Generate a JSON object from a prepared function-calling prompt.
@@ -29,8 +30,7 @@ class JsonGenerator:
         for _ in range(MAX_TOKENS):
             logits = self.model.get_logits_from_input_ids(current_input_ids)
 
-            next_token_id = int(max(range(len(logits)),
-                                    key=lambda i: logits[i]))
+            next_token_id = self._get_best_token(logits)
 
             current_input_ids.append(next_token_id)
             generated_tokens.append(next_token_id)
@@ -43,6 +43,18 @@ class JsonGenerator:
                 break
 
         return str('{' + self.model.decode(generated_tokens))
+
+    @staticmethod
+    def _get_best_token(logits: list[float]) -> int:
+        """Given the logits list, returns the best token."
+
+        Args:
+            logits: raw logits for the next token
+
+        Returns:
+            The best token as int.
+        """
+        return int(np.argmax(logits))
 
     @staticmethod
     def _to_token_list(tensor: Any) -> list[int]:
