@@ -1,16 +1,15 @@
 from typing import Callable, Optional, Any
 from tqdm import tqdm  # type: ignore
 from functools import partial
-
 from llm_sdk import Small_LLM_Model  # type: ignore
 
-from .constraints import (TokenConstraint, ChoiceConstraint,
-                          NumericalConstraint, RawTextConstraint)
 from .models import FunctionCallResult
 from .prompt import build_name_prompt, build_param_prompt
 from .functions import FunctionDef
 from .generator import Generator
 from .vocab import Vocab
+from .constraints import (TokenConstraint, ChoiceConstraint,
+                          NumericalConstraint, RawTextConstraint)
 
 
 class FunctionCaller:
@@ -81,7 +80,7 @@ class FunctionCaller:
                                                   parameters)
                 raw_value = self.generator.generate(value_prompt, constraint)
                 if p_type is str:
-                    raw_value = self._strip_quotes(raw_value)
+                    raw_value = self._clean_raw(raw_value, p_name, fn)
 
                 try:
                     parameters[p_name] = self._convert(raw_value, p_type)
@@ -107,10 +106,14 @@ class FunctionCaller:
         return factory() if factory else None
 
     @staticmethod
-    def _strip_quotes(raw: str) -> str:
+    def _clean_raw(raw: str, p_name: str, fn: FunctionDef) -> str:
         raw = raw.strip()
         if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ("'", '"'):
             return raw[1:-1]
+
+        if p_name == "regex" or "regex" in fn.description.lower():
+            raw = raw.replace("\\\\", "\\")
+
         return raw
 
     @staticmethod

@@ -23,59 +23,29 @@ def build_name_prompt(functions: list[FunctionDef],
     )
 
 
-EXAMPLE = (
-    "Examples:\n"
-    "Function: fn_reverse_string(s: str): Reverse a string.\n"
-    "User query: Reverse the string 'abc'\n"
-    "Value of 's' (str): abc\n\n"
-    "Function: fn_greet(name: str): Greet a person by name.\n"
-    "User query: Greet alice\n"
-    "Value of 'name' (str): alice\n\n"
-    "Function: fn_substitute_string_with_regex(source_string: str, regex: str,"
-    " replacement: str): Replace regex matches in a string.\n"
-    "User query: Replace all numbers in \"abc 123 def\" with X\n"
-    "Value of 'source_string' (str): abc 123 def\n"
-    "Value of 'regex' (str): \\d+\n"
-    "Value of 'replacement' (str): X\n\n"
-    "User query: Replace all vowels in 'sky' with *\n"
-    "Value of 'regex' (str): [aeiouAEIOU]\n\n"
-    "User query: Substitute the word 'foo' with 'bar' in 'foo is foo'\n"
-    "Value of 'regex' (str): \\bfoo\\b\n\n"
-)
-
-
-def build_param_prompt(fn: FunctionDef,
-                       p_name: str,
-                       p_type: type,
-                       query: str,
-                       filled: dict[str, Any]) -> str:
-
-    parameters = [f"{p_name}: {p_type.__name__}"
-                  for p_name, p_type in fn.parameters.items()]
-
-    filled_str = ""
+def build_param_prompt(fn: FunctionDef, p_name: str, p_type: type,
+                       query: str, filled: dict[str, Any]) -> str:
+    call_so_far = f"{fn.name}("
+    call_so_far += ", ".join(
+        f'{k}={v!r}' if isinstance(v, str) else f"{k}={v}"
+        for k, v in filled.items())
     if filled:
-        filled_lines = "\n".join(f"  {k} = {v!r}" for k, v in filled.items())
-        filled_str = f"Already determined:\n{filled_lines}\n"
+        call_so_far += ", "
+    call_so_far += f"{p_name}="
+    if p_type is str:
+        call_so_far += '"'
 
     regex_hint = ""
-    if p_name == "regex":
+    if p_name == "regex" or "regex" in fn.description.lower():
         regex_hint = (
-            "This value must be a regular expression pattern (using "
-            "syntax like \\d, \\s, [abc], \\b), never a literal word or "
-            "number copied from the query.\n"
+            "# Common regex building blocks: \\d+ (digits), \\s+ (spaces), "
+            "\\w+ (word chars), [abc] (character set), \\bword\\b "
+            "(whole word)\n"
         )
 
     return (
-        "You are a function calling assistant.\n"
-        f"{EXAMPLE}"
-        f"The chosen function is '{fn.name}: {fn.description}'.\n"
-        f"The function needs these parameters: {', '.join(parameters)}.\n"
-        f"{filled_str}"
+        f"# {fn.description}\n"
         f"{regex_hint}"
-        "Give the value of the remaining parameter below, matching its "
-        "role exactly. Answer with the raw value only — no quotes, no "
-        "explanation.\n"
-        f"User query: {query}\n"
-        f"Value of '{p_name}' ({p_type.__name__}): "
+        f"# Query: \"{query}\"\n"
+        f"{call_so_far}"
     )

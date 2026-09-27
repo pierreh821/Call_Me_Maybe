@@ -130,4 +130,4 @@ class RawTextConstraint:
         if self._unbalanced(generated):
             return False
         text = self.vocab.token_to_txt(token_id)
-        return "\n" in text
+        return "\n" in text or '"' in text
