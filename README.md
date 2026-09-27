@@ -76,6 +76,8 @@ No representative accuracy or latency benchmark has been recorded, so a numerica
 
 Small models can omit, alter, or add punctuation to string values, while free-form text cannot be safely constrained by a simple numeric grammar. The implementation addresses this with query-focused prompts, path/regex hints, quote and newline stopping, and a conversion step. These measures reduce some format errors but are not a substitute for complete schema-aware decoding. Another challenge is allowing the function set to change between runs; the available names and parameter types are therefore read from the supplied JSON instead of being embedded in the source.
 
+Negatives number (int or float) have been hard to fix.
+
 ## Testing Strategy
 
 The committed demonstration inputs exercise arithmetic, greetings, string reversal, square roots, and regular-expression substitutions. There is not yet a dedicated automated `pytest`/`unittest` suite in the main application. For a manual end-to-end check, run the default inputs, then parse and inspect the generated output:

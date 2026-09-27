@@ -64,6 +64,17 @@ def build_param_prompt(fn: FunctionDef, p_name: str, p_type: type,
             "(whole word)\n"
         )
 
+    numbers_hint = ""
+    if p_type in (int, float):
+        numbers_hint = (
+            "# Add two numbers together.\n"
+            "# Query: \"What is the sum of -5 and 10?\"\n"
+            "fn_add_numbers(a=-5, b=10\n\n"
+            "# Add two numbers together.\n"
+            "# Query: \"What is the sum of -3 and -8?\"\n"
+            "fn_add_numbers(a=-3, b=-8\n\n"
+        )
+
     extra_hint = ""
     name_lower = p_name.lower()
     if "path" in name_lower or "file" in name_lower:
@@ -77,7 +88,10 @@ def build_param_prompt(fn: FunctionDef, p_name: str, p_type: type,
     return (
         f"# {fn.description}\n"
         f"{regex_hint}"
+        f"{numbers_hint}"
         f"{extra_hint}"
+        "# A minus sign directly before a digit means a negative number, "
+        "not subtraction or punctuation.\n"
         f"# Query: \"{query}\"\n"
         f"{call_so_far}"
     )

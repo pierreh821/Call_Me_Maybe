@@ -2,6 +2,7 @@ from typing import Callable, Optional, Any
 from tqdm import tqdm
 from functools import partial
 from llm_sdk import Small_LLM_Model  # type: ignore
+import re
 
 from .models import FunctionCallResult
 from .prompt import build_name_prompt, build_param_prompt
@@ -79,8 +80,11 @@ class FunctionCaller:
                 value_prompt = build_param_prompt(fn, p_name, p_type, prompt,
                                                   parameters)
                 raw_value = self.generator.generate(value_prompt, constraint)
+
                 if p_type is str:
                     raw_value = self._clean_raw(raw_value, p_name, fn)
+                if p_type in (int, float):
+                    raw_value = self._sign_correct(raw_value, prompt)
 
                 try:
                     parameters[p_name] = self._convert(raw_value, p_type)
@@ -165,3 +169,13 @@ class FunctionCaller:
             return float(cleaned)
 
         return p_type(cleaned)
+
+    @staticmethod
+    def _sign_correct(raw_value: str, query: str) -> str:
+        cleaned = raw_value.strip().lstrip('+')
+        if cleaned.startswith('-'):
+            return raw_value
+        int_part = cleaned.split('.')[0]
+        if int_part and re.search(rf'-\s*{re.escape(int_part)}\b', query):
+            return '-' + raw_value
+        return raw_value
