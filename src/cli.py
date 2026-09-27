@@ -2,9 +2,12 @@ from argparse import ArgumentParser, Namespace
 from sys import stderr
 from pathlib import Path
 
+from llm_sdk import Small_LLM_Model  # type: ignore
+
 from .loaders import InputError, load_functions, load_prompts, save_result
 from .caller import FunctionCaller
 from .models import FunctionCallResult
+from .vocab import Vocab
 
 
 class Colors:
@@ -82,6 +85,10 @@ def main() -> int:
         print(e, file=stderr)
         return (1)
 
+    model = Small_LLM_Model()
+    vocab = Vocab.from_model(model)
+    caller = FunctionCaller(model, vocab, functions)
+
     def incremental_save(output_data: list[FunctionCallResult]) -> None:
         """Persist results incrementally while prompts are processed.
 
@@ -90,8 +97,7 @@ def main() -> int:
         """
         save_result(Path(args.output), output_data)
 
-    output, errors = FunctionCaller(functions).run(
-        prompts, on_result=incremental_save)
+    output, errors = caller.run(prompts, on_result=incremental_save)
 
     save_result(Path(args.output), output)
     print_errors(errors)

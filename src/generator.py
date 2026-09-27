@@ -1,18 +1,22 @@
 from typing import Any
 from llm_sdk import Small_LLM_Model  # type: ignore
-import numpy as np
 
-MAX_TOKENS = 100
+from .constraints import TokenConstraint
+from .vocab import Vocab
 
 
-class JsonGenerator:
+class Generator:
     """Generate a JSON object with greedy, model-guided token decoding."""
 
-    def __init__(self) -> None:
+    def __init__(self, model: Small_LLM_Model, vocab: Vocab) -> None:
         """Initialize the default small language model."""
-        self.model = Small_LLM_Model()
+        self.model = model
+        self.vocab = vocab
 
-    def generate(self, prompt: str) -> str:
+    def generate(self,
+                 prompt: str,
+                 constraint: TokenConstraint,
+                 max_tokens: int = 30) -> str:
         """Generate a JSON object from a prepared function-calling prompt.
 
         Args:
@@ -21,40 +25,29 @@ class JsonGenerator:
         Returns:
             The generated JSON object as text.
         """
-        current_input_ids = self._to_token_list(
-            self.model.encode(prompt))
+        input_ids = self._to_token_list(self.model.encode(prompt))
+        generated = ""
 
-        generated_tokens: list[int] = []
-        open_braces = 1
+        for _ in range(max_tokens):
+            resolved = constraint.resolved(generated)
+            if resolved is not None:
+                return resolved
 
-        for _ in range(MAX_TOKENS):
-            logits = self.model.get_logits_from_input_ids(current_input_ids)
-
-            next_token_id = self._get_best_token(logits)
-
-            current_input_ids.append(next_token_id)
-            generated_tokens.append(next_token_id)
-
-            latest_char = self.model.decode([next_token_id])
-            open_braces += latest_char.count('{')
-            open_braces -= latest_char.count('}')
-
-            if open_braces <= 0:
+            allowed = constraint.allowed_ids(generated)
+            if not allowed:
                 break
 
-        return str('{' + self.model.decode(generated_tokens))
+            logits = self.model.get_logits_from_input_ids(input_ids)
+            next_token_id = max(allowed, key=lambda i: logits[i])
+            text = self.vocab.token_to_txt(next_token_id)
 
-    @staticmethod
-    def _get_best_token(logits: list[float]) -> int:
-        """Given the logits list, returns the best token."
+            if constraint.is_stop(next_token_id, generated):
+                break
 
-        Args:
-            logits: raw logits for the next token
+            input_ids.append(next_token_id)
+            generated += text
 
-        Returns:
-            The best token as int.
-        """
-        return int(np.argmax(logits))
+        return constraint.resolved(generated) or generated
 
     @staticmethod
     def _to_token_list(tensor: Any) -> list[int]:
