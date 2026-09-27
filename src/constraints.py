@@ -85,7 +85,7 @@ class NumericalConstraint:
                 if self._is_number_token(generated, text)}
 
     def stop_ids(self, generated: str) -> set[int]:
-        if not any(c.isdigit for c in generated):
+        if not any(c.isdigit() for c in generated):
             return set()
         return {t_id for t_id, text in self.vocab.items()
                 if text and text[0] in self.STOP_CHARS}
@@ -106,6 +106,8 @@ class NumericalConstraint:
 
 
 class RawTextConstraint:
+    PAIRS = {"(": ")", "[": "]", "{": "}"}
+
     def __init__(self, vocab: Vocab) -> None:
         self.vocab = vocab
 
@@ -115,6 +117,17 @@ class RawTextConstraint:
     def resolved(self, generated: str) -> str | None:
         return None
 
+    def _unbalanced(self, generated: str) -> bool:
+        stack: list[str] = []
+        for ch in generated:
+            if ch in self.PAIRS:
+                stack.append(ch)
+            elif ch in self.PAIRS.values() and stack:
+                stack.pop()
+        return bool(stack)
+
     def is_stop(self, token_id: int, generated: str) -> bool:
+        if self._unbalanced(generated):
+            return False
         text = self.vocab.token_to_txt(token_id)
         return "\n" in text

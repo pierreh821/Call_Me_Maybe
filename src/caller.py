@@ -77,8 +77,11 @@ class FunctionCaller:
                         f"{p_type.__name__}.")
                     continue
 
-                value_prompt = build_param_prompt(fn, p_name, p_type, prompt)
+                value_prompt = build_param_prompt(fn, p_name, p_type, prompt,
+                                                  parameters)
                 raw_value = self.generator.generate(value_prompt, constraint)
+                if p_type is str:
+                    raw_value = self._strip_quotes(raw_value)
 
                 try:
                     parameters[p_name] = self._convert(raw_value, p_type)
@@ -86,10 +89,10 @@ class FunctionCaller:
                     param_errors.append(
                         f"Using {fn.name}, cannot convert parameter '{p_name}'"
                         f" value: {raw_value!r} to {p_type.__name__}.")
+                    parameters[p_name] = "" if p_type is str else 0
 
             if param_errors:
                 errors[prompt] += param_errors
-                continue
 
             result = FunctionCallResult(prompt=prompt, name=fn.name,
                                         parameters=parameters)
@@ -104,13 +107,20 @@ class FunctionCaller:
         return factory() if factory else None
 
     @staticmethod
+    def _strip_quotes(raw: str) -> str:
+        raw = raw.strip()
+        if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ("'", '"'):
+            return raw[1:-1]
+        return raw
+
+    @staticmethod
     def _convert(raw_value: str, p_type: type) -> Any:
         cleaned = raw_value.strip()
         if not cleaned:
             raise ValueError("empty generated value")
 
         if p_type is int:
-            as_float = float(raw_value)
+            as_float = float(cleaned)
             if not as_float.is_integer():
                 raise ValueError(f"{cleaned!r} is not an integer")
             return int(as_float)

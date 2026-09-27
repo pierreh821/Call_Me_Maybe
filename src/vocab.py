@@ -14,7 +14,10 @@ class Vocab:
 
     @staticmethod
     def _clean(token: str) -> str:
-        return token.replace("Ġ", " ").replace("▁", " ")
+        return (token
+                .replace("Ġ", " ")
+                .replace("▁", " ")
+                .replace("Ċ", "\n"))
 
     def token_to_txt(self, token_id: int) -> str:
         return self._id_to_str.get(token_id, "")
