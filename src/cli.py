@@ -13,8 +13,8 @@ from .vocab import Vocab
 class Colors:
     """ANSI escape sequences used by the command-line interface."""
 
-    RS = "\033[0m"
-    B_RD = "\033[1;31m"
+    RS: str = "\033[0m"
+    B_RD: str = "\033[1;31m"
 
 
 def print_errors(errors: dict[str, list[str]]) -> None:

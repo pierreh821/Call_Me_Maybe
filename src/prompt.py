@@ -5,6 +5,15 @@ from .functions import FunctionDef
 
 def build_name_prompt(functions: list[FunctionDef],
                       query: str) -> str:
+    """Build a prompt asking the model to choose an available function.
+
+    Args:
+        functions: Function definitions to present as candidates.
+        query: User request the selected function should satisfy.
+
+    Returns:
+        A text prompt ending with the function-name generation prefix.
+    """
     fn_list = ""
     for fn in functions:
         parameters = [f"{p_name}: {p_type.__name__}"
@@ -25,6 +34,18 @@ def build_name_prompt(functions: list[FunctionDef],
 
 def build_param_prompt(fn: FunctionDef, p_name: str, p_type: type,
                        query: str, filled: dict[str, Any]) -> str:
+    """Build a prompt for extracting one function parameter.
+
+    Args:
+        fn: Selected function whose description guides extraction.
+        p_name: Name of the parameter currently being generated.
+        p_type: Python type declared for the parameter.
+        query: Original user request.
+        filled: Parameter values already generated for this function call.
+
+    Returns:
+        A prompt containing the request, relevant hints, and partial call.
+    """
     call_so_far = f"{fn.name}("
     call_so_far += ", ".join(
         f'{k}={v!r}' if isinstance(v, str) else f"{k}={v}"

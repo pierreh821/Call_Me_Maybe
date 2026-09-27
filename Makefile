@@ -5,7 +5,7 @@ DEFINITION := data/input/functions_definition.json
 INPUT := data/input/function_calling_tests.json
 OUTPUT := data/output/function_calling_results.json
 
-.PHONY: all install run debug clean lint lint-strict
+.PHONY: all install run debug clean fclean lint lint-strict
 
 all: run
 

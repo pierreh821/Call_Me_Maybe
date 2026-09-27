@@ -102,11 +102,29 @@ class FunctionCaller:
         return results, errors
 
     def _constraint_for(self, spec: type) -> TokenConstraint | None:
+        """Create the token constraint registered for a parameter type.
+
+        Args:
+            spec: Python type associated with a function parameter.
+
+        Returns:
+            A new constraint for supported types, or ``None`` otherwise.
+        """
         factory = self._constraint_factories.get(spec)
         return factory() if factory else None
 
     @staticmethod
     def _clean_raw(raw: str, p_name: str, fn: FunctionDef) -> str:
+        """Remove generated string wrappers and normalize regex escapes.
+
+        Args:
+            raw: Generated raw parameter value.
+            p_name: Name of the parameter being cleaned.
+            fn: Function definition that provides context for the value.
+
+        Returns:
+            The cleaned string value.
+        """
         raw = raw.strip()
         if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ("'", '"'):
             return raw[1:-1]
@@ -118,6 +136,21 @@ class FunctionCaller:
 
     @staticmethod
     def _convert(raw_value: str, p_type: type) -> Any:
+        """Convert generated text to its declared parameter type.
+
+        Integer conversion accepts integral numeric text but rejects fractions;
+        empty values and non-integral integers raise ``ValueError``.
+
+        Args:
+            raw_value: Text generated for the parameter.
+            p_type: Python type to which the value should be converted.
+
+        Returns:
+            The converted value.
+
+        Raises:
+            ValueError: If the value is empty or cannot represent an integer.
+        """
         cleaned = raw_value.strip()
         if not cleaned:
             raise ValueError("empty generated value")

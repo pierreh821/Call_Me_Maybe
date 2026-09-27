@@ -1,7 +1,7 @@
 from pydantic import BaseModel, field_validator
 
 
-JSON_TYPES = {
+JSON_TYPES: dict[str, type] = {
         "number": float,
         "string": str,
         "integer": int
