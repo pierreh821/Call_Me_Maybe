@@ -43,9 +43,20 @@ def build_param_prompt(fn: FunctionDef, p_name: str, p_type: type,
             "(whole word)\n"
         )
 
+    extra_hint = ""
+    name_lower = p_name.lower()
+    if "path" in name_lower or "file" in name_lower:
+        extra_hint = (
+            "# Example: query mentions /var/log/app.log -> "
+            "path=\"/var/log/app.log\n"
+            "# Copy the full path exactly as written, slashes and drive "
+            "prefixes included.\n"
+        )
+
     return (
         f"# {fn.description}\n"
         f"{regex_hint}"
+        f"{extra_hint}"
         f"# Query: \"{query}\"\n"
         f"{call_so_far}"
     )

@@ -1,5 +1,5 @@
 from typing import Callable, Optional, Any
-from tqdm import tqdm  # type: ignore
+from tqdm import tqdm
 from functools import partial
 from llm_sdk import Small_LLM_Model  # type: ignore
 

@@ -13,18 +13,8 @@ class Generator:
         self.model = model
         self.vocab = vocab
 
-    def generate(self,
-                 prompt: str,
-                 constraint: TokenConstraint,
+    def generate(self, prompt: str, constraint: TokenConstraint,
                  max_tokens: int = 30) -> str:
-        """Generate a JSON object from a prepared function-calling prompt.
-
-        Args:
-            prompt: Prompt containing function definitions and a user query.
-
-        Returns:
-            The generated JSON object as text.
-        """
         input_ids = self._to_token_list(self.model.encode(prompt))
         generated = ""
 
@@ -41,8 +31,9 @@ class Generator:
             next_token_id = max(allowed, key=lambda i: logits[i])
             text = self.vocab.token_to_txt(next_token_id)
 
-            if constraint.is_stop(next_token_id, generated):
-                break
+            stop_fragment = constraint.stop_at(generated, text)
+            if stop_fragment is not None:
+                return generated + stop_fragment  # coupe net, jette le reste
 
             input_ids.append(next_token_id)
             generated += text

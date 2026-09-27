@@ -10,8 +10,8 @@ class TokenConstraint(Protocol):
     def resolved(self, generated: str) -> str | None:
         """The final value, if `generated` already determines it uniquely."""
 
-    def is_stop(self, token_id: int, generated: str) -> bool:
-        """Returns true if the character means absolute stop"""
+    def stop_at(self, generated: str, token_text: str) -> str | None:
+        pass
 
 
 class ChoiceConstraint:
@@ -51,8 +51,8 @@ class ChoiceConstraint:
         remaining = self._remaining(generated)
         return remaining[0] if len(remaining) == 1 else None
 
-    def is_stop(self, token_id: int, generated: str) -> bool:
-        return False
+    def stop_at(self, generated: str, token_text: str) -> str | None:
+        return None
 
 
 class NumericalConstraint:
@@ -97,15 +97,16 @@ class NumericalConstraint:
     def resolved(self, generated: str) -> str | None:
         return None
 
-    def is_stop(self, token_id: int, generated: str) -> bool:
+    def stop_at(self, generated: str, token_text: str) -> str | None:
         if not any(c.isdigit() for c in generated):
-            return False
-
-        text = self.vocab.token_to_txt(token_id)
-        return bool(text) and text[0] in self.STOP_CHARS
+            return None
+        if token_text and token_text[0] in self.STOP_CHARS:
+            return ""
+        return None
 
 
 class RawTextConstraint:
+    STOP_CHARS = ('"', "\n")
     PAIRS = {"(": ")", "[": "]", "{": "}"}
 
     def __init__(self, vocab: Vocab) -> None:
@@ -117,17 +118,22 @@ class RawTextConstraint:
     def resolved(self, generated: str) -> str | None:
         return None
 
-    def _unbalanced(self, generated: str) -> bool:
+    def _stack_of(self, text: str) -> list[str]:
         stack: list[str] = []
-        for ch in generated:
+        for ch in text:
             if ch in self.PAIRS:
                 stack.append(ch)
             elif ch in self.PAIRS.values() and stack:
                 stack.pop()
-        return bool(stack)
+        return stack
 
-    def is_stop(self, token_id: int, generated: str) -> bool:
-        if self._unbalanced(generated):
-            return False
-        text = self.vocab.token_to_txt(token_id)
-        return "\n" in text or '"' in text
+    def stop_at(self, generated: str, token_text: str) -> str | None:
+        stack = self._stack_of(generated)
+        for i, ch in enumerate(token_text):
+            if ch in self.PAIRS:
+                stack.append(ch)
+            elif ch in self.PAIRS.values() and stack:
+                stack.pop()
+            elif ch in self.STOP_CHARS and not stack:
+                return token_text[:i]
+        return None
