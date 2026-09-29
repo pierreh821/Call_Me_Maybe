@@ -45,6 +45,15 @@ make clean
 
 `make run` uses the default paths. `make debug` starts the program under `pdb`. `make lint` runs the subject's Flake8 and Mypy checks. The output parent directory is created when results are saved; generated output is ignored by Git.
 
+If you are running the program from a 42 computer, I recommend using:
+
+```sh
+export UV_CACHE_DIR="~/goinfre/uv_storage/cache"
+export UV_DATA_DIR="~/goinfre/uv_storage/data"
+```
+
+This avoids using too much space from your personal directory.
+
 ## Algorithm Explanation
 
 The current implementation uses constrained, greedy token selection for individual function names and argument values; it does **not** generate a complete JSON document token by token. Its pipeline is:
