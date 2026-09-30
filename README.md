@@ -48,8 +48,11 @@ make clean
 If you are running the program from a 42 computer, I recommend using:
 
 ```sh
-export UV_CACHE_DIR="~/goinfre/uv_storage/cache"
-export UV_DATA_DIR="~/goinfre/uv_storage/data"
+export GOINFRE=/goinfre/$USER
+export UV_CACHE_DIR="$GOINFRE/uv_storage/cache"
+export PIP_CACHE_DIR="$GOINFRE/pip_cache"
+export npm_config_cache="$GOINFRE/npm_cache"
+export CARGO_HOME="$GOINFRE/cargo"
 ```
 
 This avoids using too much space from your personal directory.
