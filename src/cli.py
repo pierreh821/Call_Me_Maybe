@@ -87,9 +87,7 @@ def main() -> int:
 
     model = Small_LLM_Model()
     vocab = Vocab.from_model(model)
-    caller = FunctionCaller(model=model,
-                            vocab=vocab,
-                            functions=functions)
+    caller = FunctionCaller(model, vocab, functions)
 
     def incremental_save(output_data: list[FunctionCallResult]) -> None:
         """Persist results incrementally while prompts are processed.
