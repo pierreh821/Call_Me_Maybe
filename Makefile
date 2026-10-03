@@ -3,7 +3,7 @@ PYTHON := $(ENV)/bin/python
 
 DEFINITION := data/input/functions_definition.json
 INPUT := data/input/function_calling_tests.json
-OUTPUT := data/output/function_calling_results.json
+OUTPUT := data/output/function_calls.json
 
 .PHONY: all install run debug clean fclean lint lint-strict
 

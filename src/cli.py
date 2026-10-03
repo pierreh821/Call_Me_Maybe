@@ -62,7 +62,7 @@ def parse_args() -> Namespace:
     )
     input_parser.add_argument(
         '-o', '--output',
-        default='data/output/function_calling_results.json',
+        default='data/output/function_calls.json',
         help='Path to the output JSON',
         required=False
     )
@@ -87,7 +87,9 @@ def main() -> int:
 
     model = Small_LLM_Model()
     vocab = Vocab.from_model(model)
-    caller = FunctionCaller(model, vocab, functions)
+    caller = FunctionCaller(model=model,
+                            vocab=vocab,
+                            functions=functions)
 
     def incremental_save(output_data: list[FunctionCallResult]) -> None:
         """Persist results incrementally while prompts are processed.

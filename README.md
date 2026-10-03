@@ -28,7 +28,7 @@ The command-line interface accepts paths for all three files:
 uv run python -m src \
   --functions_definition data/input/functions_definition.json \
   --input data/input/function_calling_tests.json \
-  --output data/output/function_calling_results.json
+  --output data/output/function_calls.json
 ```
 
 The prompt input is a JSON array of objects such as `{"prompt": "..."}`. The function-definition input is a JSON array with function names, descriptions, parameter declarations, and (in the subject's format) return declarations. This implementation extracts and uses the name, description, and parameter types; it supports `number`, `integer`, and `string` parameters. Input examples are in `data/input/`.
@@ -82,7 +82,7 @@ The committed demonstration inputs exercise arithmetic, greetings, string revers
 
 ```sh
 make run
-uv run python -m json.tool data/output/function_calling_results.json
+uv run python -m json.tool data/output/function_calls.json
 make lint
 ```
 
