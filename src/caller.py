@@ -8,8 +8,10 @@ from .prompt import build_name_prompt, build_param_prompt
 from .functions import FunctionDef
 from .generator import Generator
 from .vocab import Vocab
-from .constraints import (TokenConstraint, ChoiceConstraint,
-                          NumericalConstraint, RawTextConstraint)
+from .constraints import (TokenConstraint as TokConstr,
+                          ChoiceConstraint as ChoiceConstr,
+                          NumericalConstraint as NumConstr,
+                          RawTextConstraint as RawTextConstr)
 
 
 class FunctionCaller:
@@ -27,11 +29,10 @@ class FunctionCaller:
         self.vocab = vocab
         self.functions = functions
         self.generator = Generator(model, vocab)
-        self._constraint_factories: dict[type, Callable[[], TokenConstraint]] \
-            = {
-            float: partial(NumericalConstraint, vocab, allow_float=True),
-            int: partial(NumericalConstraint, vocab, allow_float=False),
-            str: partial(RawTextConstraint, vocab),
+        self._constraint_factories: dict[type, Callable[[], TokConstr]] = {
+            float: partial(NumConstr, vocab, allow_float=True),
+            int: partial(NumConstr, vocab, allow_float=False),
+            str: partial(RawTextConstr, vocab),
             }
 
     def run(self,
@@ -57,8 +58,8 @@ class FunctionCaller:
             name_prompt = build_name_prompt(self.functions, prompt)
 
             name = self.generator.generate(
-                name_prompt, ChoiceConstraint(
-                    self.vocab, [fn.name for fn in self.functions]))
+                name_prompt, ChoiceConstr(self.vocab,
+                                          [fn.name for fn in self.functions]))
 
             fn = next((f for f in self.functions if f.name == name), None)
             if fn is None:
@@ -101,7 +102,7 @@ class FunctionCaller:
 
         return results, errors
 
-    def _constraint_for(self, spec: type) -> TokenConstraint | None:
+    def _constraint_for(self, spec: type) -> TokConstr | None:
         """Create the token constraint registered for a parameter type.
 
         Args:
