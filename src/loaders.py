@@ -65,8 +65,11 @@ def load_prompts(file: Path) -> list[str]:
 
             item = PromptInput(**raw_prompt)
             prompt_list.append(item.prompt)
+
         except (ValidationError, TypeError):
             raise InputError("Prompt not provided or invalid format")
+        except AttributeError:
+            raise InputError("JSON Error: Cannot read prompts, check syntax")
 
     if not prompt_list:
         raise InputError("No prompt provided")
@@ -106,8 +109,12 @@ def load_functions(file: Path) -> list[FunctionDef]:
 
             func = FunctionDef(**raw_func)
             func_list.append(func)
+
         except (ValidationError, ValueError, TypeError) as e:
             raise InputError(f"JSON Error: invalid function structure -> {e}")
+        except AttributeError:
+            raise InputError("JSON Error: Cannot read function definitions, "
+                             "check syntax")
 
     if not func_list:
         raise InputError("No function provided")
