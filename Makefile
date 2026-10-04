@@ -27,10 +27,10 @@ clean:
 fclean: clean
 	rm -rf $(ENV)
 
-lint:
+lint: install
 	uv run flake8 src
 	uv run mypy --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs src
 
-lint-strict:
+lint-strict: install
 	uv run flake8 src
 	uv run mypy --strict src

@@ -12,8 +12,6 @@ dependencies = [
     "mypy",
     "llm_sdk",
     "types-tqdm",
-    "Pydantic",
-    "numpy"
 ]
 
 [tool.uv.sources]
