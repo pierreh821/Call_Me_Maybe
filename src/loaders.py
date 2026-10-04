@@ -105,5 +105,5 @@ def save_result(file: Path, output: list[FunctionCallResult]) -> None:
         output: Validated results to serialize.
     """
     file.parent.mkdir(exist_ok=True, parents=True)
-    data = [item.model_dump()for item in output]
+    data = [item.model_dump() for item in output]
     file.write_text(json.dumps(data, indent=4), encoding="utf-8")
