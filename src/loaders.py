@@ -55,12 +55,21 @@ def load_prompts(file: Path) -> list[str]:
         raise InputError("JSON Error: prompts root must be a list")
 
     prompt_list: list[str] = []
-    for raw_prompt in raw_prompt_list:
+    for i, raw_prompt in enumerate(raw_prompt_list):
         try:
+            for key in raw_prompt.keys():
+                if key != "prompt":
+                    raise InputError(
+                        f"Unknown prompt key: '{key}' on prompt {i}, "
+                        'expected "prompt"')
+
             item = PromptInput(**raw_prompt)
             prompt_list.append(item.prompt)
         except (ValidationError, TypeError):
             raise InputError("Prompt not provided or invalid format")
+
+    if not prompt_list:
+        raise InputError("No prompt provided")
 
     return prompt_list
 
@@ -89,10 +98,19 @@ def load_functions(file: Path) -> list[FunctionDef]:
     func_list: list[FunctionDef] = []
     for raw_func in raw_func_list:
         try:
-            tool = FunctionDef(**raw_func)
-            func_list.append(tool)
+            for key in raw_func.keys():
+                if key not in ("name", "description", "parameters", "returns"):
+                    name = raw_func.get("name", "unknown function")
+                    raise InputError(
+                        f"Unknown function definition key: '{key}' on {name}")
+
+            func = FunctionDef(**raw_func)
+            func_list.append(func)
         except (ValidationError, ValueError, TypeError) as e:
-            raise InputError(f"JSON Error: invalid tool structure -> {e}")
+            raise InputError(f"JSON Error: invalid function structure -> {e}")
+
+    if not func_list:
+        raise InputError("No function provided")
 
     return func_list
 
